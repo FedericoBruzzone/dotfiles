@@ -67,10 +67,6 @@ HISTSIZE=10000
 SAVEHIST=10000
 setopt appendhistory
 
-# ===== Key Bindings =====
-bindkey '^[[1;5C' forward-word  # Ctrl + Right Arrow
-bindkey '^[[1;5D' backward-word # Ctrl + Left Arrow
-
 # ===== Alias =====
 alias ls='ls --color=auto'
 alias ll='ls -alF'
