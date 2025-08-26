@@ -1,0 +1,50 @@
+-- ===== Old Set Configuration =====
+-- vim.opt.isfname:append("@-@")
+-- vim.opt.cursorcolumn = true
+-- vim.opt.colorcolumn = "80"
+-- vim.cmd[[autocmd VimEnter * highlight ColorColumn ctermbg=0 guibg=lightgrey]]
+-- vim.opt.scrolloff = 20
+-- -- Not show the mode in the last line (no effect if vim.opt.cmdheight = 0)
+-- vim.opt.showmode = false
+-- -- Remove the status line
+-- vim.opt.cmdheight = 0
+--
+-- -- Block cursor
+-- vim.opt.guicursor = ""
+-- -- Vertical bar cursor in insert mode
+-- vim.opt.guicursor = "v:block,i:ver25,r:hor20"
+-- -- Block but transparent cursor in normal mode
+-- vim.opt.guicursor = "n-v-c:block-Cursor/lCursor,ve:ver25-Cursor/lCursor"
+-- -- Underline cursor in replace mode
+-- vim.opt.guicursor = "v:block,i:hor20,r:hor20"
+--
+-- set rtp^="/Users/federicobruzzone/.opam/4.14.0/share/ocp-indent/vim"
+--
+--
+-- vim.opt.listchars = {
+--     tab = '│·', -- '> '
+--     lead = '·', -- '.'
+--     -- extends = '⟩',
+--     -- precedes = '⟨',
+--     -- eol = '¶'-- '↲',
+--     -- nbsp = '␣',
+--     -- trail = '·' -- '•'
+-- }
+-- vim.opt.list = true
+-- function Hi()
+--     -- vim.cmd([[hi! link NonText @character]])
+--     -- vim.cmd([[hi! link Whitespace @todo]])
+--     vim.cmd([[hi! link Whitespace @character]])
+-- end
+-- vim.cmd[[autocmd VimEnter * lua Hi()]]
+
+
+
+-- ===== Old Remap Configuration =====
+-- exit terminal mode
+-- vim.api.nvim_set_keymap('t', '<C-w>N', '<C-\\><C-n>', { noremap = true, silent = true })
+-- vim.api.nvim_set_keymap('t', '<C-w>w', '<C-\\><C-n><C-w>W', { noremap = true, silent = true })
+-- vim.api.nvim_set_keymap('t', '<C-w><C-w>', '<C-\\><C-n><C-w>W', { noremap = true, silent = true })
+--
+-- vim.keymap.set("n", "n", "nzzzv")
+-- vim.keymap.set("n", "N", "Nzzzv")
