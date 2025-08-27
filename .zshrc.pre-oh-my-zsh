@@ -99,7 +99,7 @@ export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 export PATH=$JAVA_HOME/bin:$PATH
 
 # LLVM configuration
-export PATH=$PATH:/usr/lib/llvm14/bin
+# export PATH=$PATH:/usr/lib/llvm14/bin
 
 # Latex configuration
 export TEXEDIT="nvim +%d %s"
