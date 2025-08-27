@@ -1,0 +1,32 @@
+#!/bin/bash
+#!/bin/bash
+CITY=""  # vuoto = auto-detect
+URL="https://wttr.in/${CITY}?format=j1"
+
+DATA=$(curl -s "$URL")
+
+# valori principali
+TEMP=$(echo "$DATA" | jq -r '.current_condition[0].temp_C')
+COND=$(echo "$DATA" | jq -r '.current_condition[0].weatherDesc[0].value')
+HUMIDITY=$(echo "$DATA" | jq -r '.current_condition[0].humidity')
+WIND_SPEED=$(echo "$DATA" | jq -r '.current_condition[0].windspeedKmph')
+WIND_DIR=$(echo "$DATA" | jq -r '.current_condition[0].winddir16Point')
+
+# luogo rilevato automaticamente
+LOCATION=$(echo "$DATA" | jq -r '.nearest_area[0].areaName[0].value')
+
+# fallback per valori mancanti
+TEMP=${TEMP:-N/A}
+COND=${COND:-N/A}
+HUMIDITY=${HUMIDITY:-N/A}
+WIND_SPEED=${WIND_SPEED:-N/A}
+WIND_DIR=${WIND_DIR:-N/A}
+LOCATION=${LOCATION:-N/A}
+
+# output JSON valido per Waybar
+# printf '{"text":"%s: %s°C","tooltip":"Location: %s\\nWeather: %s\\nTemp: %s°C\\nHumidity: %s%%\\nWind: %s %s km/h"}\n' \
+#   "$LOCATION" "$TEMP" "$LOCATION" "$COND" "$TEMP" "$HUMIDITY" "$WIND_DIR" "$WIND_SPEED"
+printf '{"text":"%s %s°C","tooltip":"Weather: %s\\nTemp: %s°C\\nHumidity: %s%%\\nWind: %s %s km/h"}\n' \
+  "$COND" "$TEMP" "$COND" "$TEMP" "$HUMIDITY" "$WIND_DIR" "$WIND_SPEED"
+
+

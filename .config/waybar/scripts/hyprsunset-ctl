@@ -1,0 +1,130 @@
+#!/bin/sh
+# Simple hyprsunset controller for Waybar (no HyDE).
+# Extended to accept explicit values:
+#   hyprsunset-ctl temp 4000
+#   hyprsunset-ctl gamma 120
+
+HYPRCTL="${HYPRCTL:-/usr/bin/hyprctl}"
+STATE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}"
+STATE_FILE="$STATE_DIR/hyprsunset.state"
+
+DEFAULT_TEMP=4500
+DEFAULT_STEP=250
+MIN_TEMP=1000
+MAX_TEMP=10000
+
+DEFAULT_GAMMA=100
+GAMMA_STEP=10
+MIN_GAMMA=10
+MAX_GAMMA=200
+
+mkdir -p "$STATE_DIR"
+
+load_state() {
+  [ -f "$STATE_FILE" ] && . "$STATE_FILE"
+  [ -z "$TEMP" ] && TEMP=$DEFAULT_TEMP
+  [ -z "$GAMMA" ] && GAMMA=$DEFAULT_GAMMA
+  [ -z "$MODE" ] && MODE="temp"
+}
+
+save_state() {
+  printf 'TEMP=%s\nGAMMA=%s\nMODE=%s\n' "$TEMP" "$GAMMA" "$MODE" > "$STATE_FILE"
+}
+
+clamp() {
+  val="$1"; min="$2"; max="$3"
+  [ "$val" -lt "$min" ] && val="$min"
+  [ "$val" -gt "$max" ] && val="$max"
+  printf '%s\n' "$val"
+}
+
+to_json() {
+  if [ "$MODE" = "identity" ]; then
+    printf '{"text":"🌙 Off","tooltip":"Night light OFF\\nGamma: %s%%","class":"off"}\n' "$GAMMA"
+  else
+    printf '{"text":"🕯️ %sK","tooltip":"Temperature: %sK\\nGamma: %s%%","class":"on"}\n' "$TEMP" "$TEMP" "$GAMMA"
+  fi
+}
+
+cmd_status() {
+  load_state
+  to_json
+}
+
+cmd_toggle() {
+  load_state
+  if [ "$MODE" = "identity" ]; then
+    MODE="temp"
+    "$HYPRCTL" hyprsunset temperature "$TEMP" >/dev/null 2>&1
+  else
+    MODE="identity"
+    "$HYPRCTL" hyprsunset identity >/dev/null 2>&1
+  fi
+  save_state
+}
+
+cmd_identity() {
+  load_state
+  MODE="identity"
+  "$HYPRCTL" hyprsunset identity >/dev/null 2>&1
+  save_state
+}
+
+cmd_warmer() {
+  load_state
+  MODE="temp"
+  TEMP=$(clamp $((TEMP + DEFAULT_STEP)) "$MIN_TEMP" "$MAX_TEMP")
+  "$HYPRCTL" hyprsunset temperature "$TEMP" >/dev/null 2>&1
+  save_state
+}
+
+cmd_cooler() {
+  load_state
+  MODE="temp"
+  TEMP=$(clamp $((TEMP - DEFAULT_STEP)) "$MIN_TEMP" "$MAX_TEMP")
+  "$HYPRCTL" hyprsunset temperature "$TEMP" >/dev/null 2>&1
+  save_state
+}
+
+cmd_gammaup() {
+  load_state
+  GAMMA=$(clamp $((GAMMA + GAMMA_STEP)) "$MIN_GAMMA" "$MAX_GAMMA")
+  "$HYPRCTL" hyprsunset gamma "$GAMMA" >/dev/null 2>&1
+  save_state
+}
+
+cmd_gammadown() {
+  load_state
+  GAMMA=$(clamp $((GAMMA - GAMMA_STEP)) "$MIN_GAMMA" "$MAX_GAMMA")
+  "$HYPRCTL" hyprsunset gamma "$GAMMA" >/dev/null 2>&1
+  save_state
+}
+
+cmd_temp_val() {
+  load_state
+  MODE="temp"
+  TEMP=$(clamp "$1" "$MIN_TEMP" "$MAX_TEMP")
+  "$HYPRCTL" hyprsunset temperature "$TEMP" >/dev/null 2>&1
+  save_state
+}
+
+cmd_gamma_val() {
+  load_state
+  GAMMA=$(clamp "$1" "$MIN_GAMMA" "$MAX_GAMMA")
+  "$HYPRCTL" hyprsunset gamma "$GAMMA" >/dev/null 2>&1
+  save_state
+}
+
+case "$1" in
+  status)     cmd_status ;;
+  toggle)     cmd_toggle ;;
+  identity)   cmd_identity ;;
+  warmer)     cmd_warmer ;;
+  cooler)     cmd_cooler ;;
+  gammaup)    cmd_gammaup ;;
+  gammadown)  cmd_gammadown ;;
+  temp)       [ -n "$2" ] && cmd_temp_val "$2" || echo "Usage: $0 temp <value>" >&2 ;;
+  gamma)      [ -n "$2" ] && cmd_gamma_val "$2" || echo "Usage: $0 gamma <value>" >&2 ;;
+  *) echo "Usage: $0 {status|toggle|identity|warmer|cooler|gammaup|gammadown|temp <val>|gamma <val>}" >&2; exit 2 ;;
+esac
+

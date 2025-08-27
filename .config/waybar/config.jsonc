@@ -1,0 +1,125 @@
+// [
+{
+  "layer": "top",
+  "output": ["*"],
+  "position": "top",
+  "mode": "dock",
+  "exclusive": true,
+  "passthrough": false,
+  "reload_style_on_change": true,
+  "include": [
+    "$HOME/.config/waybar/modules/hyprland-workspaces.jsonc",
+    "$HOME/.config/waybar/modules/hyprland-mode.jsonc",
+    "$HOME/.config/waybar/modules/custom-power.jsonc",
+    "$HOME/.config/waybar/modules/custom-spotify.jsonc",
+    "$HOME/.config/waybar/modules/custom-mediaplayer.jsonc",
+    "$HOME/.config/waybar/modules/custom-hyprsunset.jsonc",
+    "$HOME/.config/waybar/modules/custom-weather.jsonc",
+    "$HOME/.config/waybar/modules/clock.jsonc",
+    "$HOME/.config/waybar/modules/cpu.jsonc",
+    "$HOME/.config/waybar/modules/keyboard-state.jsonc",
+    "$HOME/.config/waybar/modules/backlight.jsonc",
+    "$HOME/.config/waybar/modules/battery.jsonc",
+    "$HOME/.config/waybar/modules/bluetooth.jsonc",
+    "$HOME/.config/waybar/modules/idle_inhibitor.jsonc",
+    "$HOME/.config/waybar/modules/network.jsonc",
+    "$HOME/.config/waybar/modules/memory.jsonc",
+    "$HOME/.config/waybar/modules/network#bandwidth.jsonc",
+    "$HOME/.config/waybar/modules/power-profiles-demon.jsonc",
+    "$HOME/.config/waybar/modules/privacy.jsonc",
+    "$HOME/.config/waybar/modules/pulseaudio.jsonc",
+    "$HOME/.config/waybar/modules/pulseaudio#microphone.jsonc",
+    "$HOME/.config/waybar/modules/tray.jsonc",
+    "$HOME/.config/waybar/modules/mpd.jsonc"
+  ],
+  // ? Groups per side
+  "modules-left": ["group/leaf-inverse", "group/pill#1"],
+  "modules-center": ["group/pill-in#center"],
+  "modules-right": ["group/pill#2", "group/leaf"],
+  //  ? Declaring the groups
+  "group/leaf-inverse": {
+    "orientation": "inherit",
+    "modules": [
+        "hyprland/workspaces", 
+        "wlr/taskbar" 
+    ]
+  },
+  "group/pill#1": {
+    "orientation": "inherit",
+    "modules": [
+        "custom/spotify",
+        "custom/mediaplayer",
+    ]
+  },
+  "group/pill-in#center": {
+    "orientation": "inherit",
+    "modules": [
+      "custom/weather", 
+      "clock",
+    ]
+  },
+  "group/pill#2": {
+      "orientation": "inherit",
+      "modules": [
+        "custom/hyprsunset", 
+        "idle_inhibitor",
+        "power-profiles-daemon",
+      ]
+  },
+  "group/leaf": {
+    "orientation": "inherit",
+    "modules": [
+      "privacy",
+      "backlight",
+      "network",
+      "network#bandwidthUpBytes",
+      "network#bandwidthDownBytes",
+      "bluetooth",
+      "pulseaudio",
+      "pulseaudio#microphone",
+      "battery",
+      "cpu",
+      "memory",
+      "temperature",
+      // "hyprland/language",
+      "keyboard-state",
+      "tray",
+      "custom/power"
+      // "custom/swaync",
+      // "custom/dunst",
+    ]
+  },
+},
+// {
+//     "layer": "top",
+//     "position": "bottom",
+//     "height": 41,
+//     "width": 2,
+//     "modules-left": [
+//       "custom/os_button"
+//     ],
+//     "modules-center": [
+//       "hyprland/mode",
+//       "wlr/taskbar"
+//     ],
+//     "margin": "4",
+//     "spacing": "5",
+//     "sway/window": {
+//       "max-length": 50
+//     },
+//     "custom/os_button": {
+//       "format": "🔍",
+//       "on-click": "wofi --show drun",
+//       "tooltip": false
+//     },
+//     "wlr/taskbar": {
+//       "format": "{icon}",
+//       "icon-size": 36,
+//       "spacing": 3,
+//       "on-click-middle": "close",
+//       "tooltip-format": "{title}",
+//       "ignore-list": [],
+//       "on-click": "activate"
+//     }
+//   }
+// ]

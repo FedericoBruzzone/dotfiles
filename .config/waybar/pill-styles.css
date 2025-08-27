@@ -1,0 +1,315 @@
+/* ? Full Pill  shape*/
+
+window#waybar.bottom #pill,
+window#waybar.bottom #pill button,
+window#waybar.top #pill,
+window#waybar.top #pill button {
+    border-radius: 10pt 10pt 10pt 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.left #pill,
+window#waybar.left #pill button,
+window#waybar.right #pill,
+window#waybar.right #pill button {
+    border-radius: 10pt 10pt 10pt 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.top #pill,
+window#waybar.bottom #pill {
+    margin: 0.3em 1em 0.3em 1em;
+}
+
+window#waybar.left #pill,
+window#waybar.right #pill {
+    margin: 1em 0.3em 1em 0.3em;
+}
+
+
+/* ? half pill with the flat surface pointing upwards */
+
+window#waybar.top #pill-up,
+window#waybar.top #pill-up button,
+window#waybar.bottom #pill-up,
+window#waybar.bottom #pill-up button {
+    border-radius: 10pt 10pt 0 0;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.left #pill-up,
+window#waybar.left #pill-up button,
+window#waybar.right #pill-up,
+window#waybar.right #pill-up button {
+    border-radius: 10pt 10pt 0 0;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.top #pill-up,
+window#waybar.bottom #pill-up {
+    margin: 0.3em 1em 0.3em 1em;
+}
+
+window#waybar.left #pill-up,
+window#waybar.right #pill-up {
+    margin: 1em 0.3em 1em 0.3em;
+}
+
+/* ? half pill with the curve pointing to the right */
+
+window#waybar.top #pill-right,
+window#waybar.top #pill-right button,
+window#waybar.bottom #pill-right,
+window#waybar.bottom #pill-right button {
+    border-radius: 0 10pt 10pt 0;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.left #pill-right,
+window#waybar.left #pill-right button,
+window#waybar.right #pill-right,
+window#waybar.right #pill-right button {
+    border-radius: 0 10pt 10pt 0;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.top #pill-right,
+window#waybar.bottom #pill-right {
+    margin: 0.3em 1em 0.3em 0em;
+}
+
+window#waybar.left #pill-right,
+window#waybar.right #pill-right {
+    margin: 1em 0.3em 1em 0em;
+}
+
+/* ? half pill with the curve pointing to outwards */
+
+
+window#waybar.top #pill-out,
+window#waybar.top #pill-out button {
+    border-radius: 10pt 10pt 0 0;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.right #pill-out,
+window#waybar.right #pill-out button {
+    border-radius: 0 10pt 10pt 0;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.bottom #pill-out,
+window#waybar.bottom #pill-out button {
+    border-radius: 0 0 10pt 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.left #pill-out,
+window#waybar.left #pill-out button {
+    border-radius: 10pt 0 0 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.top #pill-out {
+    margin: 0.3em 1em 0em 1em;
+}
+
+window#waybar.right #pill-out {
+    margin: 1em 0.3em 1em 0em;
+}
+
+window#waybar.bottom #pill-out {
+    margin: 0em 1em 0.3em 1em;
+}
+
+window#waybar.left #pill-out {
+    margin: 1em 0em 1em 0.3em;
+}
+
+/* ============================ */
+
+/* ? half pill with the curve pointing to left */
+
+window#waybar.top #pill-left,
+window#waybar.top #pill-left button,
+window#waybar.bottom #pill-left,
+window#waybar.bottom #pill-left button {
+    border-radius: 10pt 0 0 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.left #pill-left,
+window#waybar.left #pill-left button,
+window#waybar.right #pill-left,
+window#waybar.right #pill-left button {
+    border-radius: 10pt 0 0 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.top #pill-left,
+window#waybar.bottom #pill-left {
+    margin: 0.3em 0em 0.3em 1em;
+}
+
+window#waybar.left #pill-left,
+window#waybar.right #pill-left {
+    margin: 1em 0em 1em 0.3em;
+}
+
+/* 
+? half pill with the curve pointing inwards 
+*/
+
+window#waybar.top #pill-in,
+window#waybar.top #pill-in button {
+    border-radius: 0 0 10pt 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.right #pill-in,
+window#waybar.right #pill-in button {
+    border-radius: 10pt 0 0 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.bottom #pill-in,
+window#waybar.bottom #pill-in button {
+    border-radius: 10pt 10pt 0 0;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.left #pill-in,
+window#waybar.left #pill-in button {
+    border-radius: 0 10pt 10pt 0;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+
+
+window#waybar.top #pill-in {
+    margin: 0em 1em 0.3em;
+}
+
+
+window#waybar.right #pill-in {
+    margin: 1em 0em 1em 0.3em;
+}
+
+
+window#waybar.bottom #pill-in {
+    margin: 0.3em 1em 0em 1em;
+}
+
+window#waybar.left #pill-in {
+    margin: 1em 0.3em 1em 0em;
+}
+
+
+/* ? half pill with the curve pointing dowmwards */
+
+
+window#waybar.top #pill-down,
+window#waybar.top #pill-down button,
+window#waybar.bottom #pill-down,
+window#waybar.bottom #pill-down button {
+    border-radius: 0em 0em 10pt 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.left #pill-down,
+window#waybar.left #pill-down button,
+window#waybar.right #pill-down,
+window#waybar.right #pill-down button {
+    border-radius: 0 0 10pt 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.top #pill-down,
+window#waybar.bottom #pill-down {
+    margin: 0em 1em 0.3em 1em;
+}
+
+window#waybar.left #pill-down,
+window#waybar.right #pill-down {
+    margin: 1em 1em 1em 1em;
+}
+
+/* ? Leaf shape */
+
+window#waybar.top #leaf,
+window#waybar.top #leaf button,
+window#waybar.bottom #leaf,
+window#waybar.bottom #leaf button {
+    border-radius: 10pt 0 10pt 0;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+    
+}
+
+window#waybar.left #leaf,
+window#waybar.left #leaf button,
+window#waybar.right #leaf,
+window#waybar.right #leaf button {
+    border-radius: 10pt 0 10pt 0;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.top #leaf,
+window#waybar.bottom #leaf {
+    margin: 0.3em 1em 0.3em 0em;
+}
+
+window#waybar.left #leaf,
+window#waybar.right #leaf {
+    margin: 1em 0.3em 1em 0.3em;
+}
+
+/* ? Inverse Leaf shape */
+
+window#waybar.top #leaf-inverse,
+window#waybar.top #leaf-inverse button,
+window#waybar.bottom #leaf-inverse,
+window#waybar.bottom #leaf-inverse button {
+    border-radius: 0 10pt 0 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.left #leaf-inverse,
+window#waybar.left #leaf-inverse button,
+window#waybar.right #leaf-inverse,
+window#waybar.right #leaf-inverse button {
+    border-radius: 0 10pt 0 10pt;
+    /* border-width: 0em; */
+    border-width: 1 0.411em;  /* #* */
+}
+
+window#waybar.top #leaf-inverse,
+window#waybar.bottom #leaf-inverse {
+    margin: 0.3em 1em 0.3em 0em;
+}
+
+window#waybar.left #leaf-inverse,
+window#waybar.right #leaf-inverse {
+    margin: 1em 0.3em 1em 0.3em;
+}
+

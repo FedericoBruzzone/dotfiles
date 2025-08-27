@@ -1,0 +1,34 @@
+{
+    "custom/hyprsunset": {
+        "exec": "~/.config/waybar/scripts/hyprsunset-ctl status",
+        "return-type": "json",
+        "format": "{}",
+        "interval": 5,
+        "signal": 19,
+        "on-click": "~/.config/waybar/scripts/hyprsunset-ctl toggle; pkill -RTMIN+19 waybar",
+        "on-scroll-up": "~/.config/waybar/scripts/hyprsunset-ctl warmer; pkill -RTMIN+19 waybar",
+        "on-scroll-down": "~/.config/waybar/scripts/hyprsunset-ctl cooler; pkill -RTMIN+19 waybar",
+        "tooltip": true,
+        "menu": "on-click-right",
+        "menu-file": "~/.config/waybar/menus/hyprsunset.xml",
+        "menu-actions": {
+          "warm-candle": "~/.config/waybar/scripts/hyprsunset-ctl temp 3000; pkill -RTMIN+19 waybar",
+          "soft-warm": "~/.config/waybar/scripts/hyprsunset-ctl temp 4000; pkill -RTMIN+19 waybar",
+          "neutral-white": "~/.config/waybar/scripts/hyprsunset-ctl temp 5000; pkill -RTMIN+19 waybar",
+          "daylight": "~/.config/waybar/scripts/hyprsunset-ctl temp 6500; pkill -RTMIN+19 waybar",
+          "cool-white": "~/.config/waybar/scripts/hyprsunset-ctl temp 7500; pkill -RTMIN+19 waybar",
+          "bright-blue": "~/.config/waybar/scripts/hyprsunset-ctl temp 9000; pkill -RTMIN+19 waybar",
+          "arctic-blue": "~/.config/waybar/scripts/hyprsunset-ctl temp 10000; pkill -RTMIN+19 waybar",
+          "gamma-20": "~/.config/waybar/scripts/hyprsunset-ctl gamma 20; pkill -RTMIN+19 waybar",
+          "gamma-30": "~/.config/waybar/scripts/hyprsunset-ctl gamma 30; pkill -RTMIN+19 waybar",
+          "gamma-40": "~/.config/waybar/scripts/hyprsunset-ctl gamma 40; pkill -RTMIN+19 waybar",
+          "gamma-50": "~/.config/waybar/scripts/hyprsunset-ctl gamma 50; pkill -RTMIN+19 waybar",
+          "gamma-60": "~/.config/waybar/scripts/hyprsunset-ctl gamma 60; pkill -RTMIN+19 waybar",
+          "gamma-70": "~/.config/waybar/scripts/hyprsunset-ctl gamma 70; pkill -RTMIN+19 waybar",
+          "gamma-80": "~/.config/waybar/scripts/hyprsunset-ctl gamma 80; pkill -RTMIN+19 waybar",
+          "gamma-90": "~/.config/waybar/scripts/hyprsunset-ctl gamma 90; pkill -RTMIN+19 waybar",
+          "gamma-100": "~/.config/waybar/scripts/hyprsunset-ctl gamma 100; pkill -RTMIN+19 waybar"
+        }
+    }
+}
+
