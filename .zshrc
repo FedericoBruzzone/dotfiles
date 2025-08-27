@@ -146,7 +146,7 @@ export PATH=$JAVA_HOME/bin:$PATH
 
 # LLVM configuration
 # export PATH=$PATH:/usr/lib/llvm14/bin
-export PATH=/usr/lib/llvm18/bin:$PATH
+# export PATH=/usr/lib/llvm18/bin:$PATH
 
 # Latex configuration
 export TEXEDIT="nvim +%d %s"
