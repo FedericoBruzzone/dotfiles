@@ -4,18 +4,17 @@
 
 This setup uses [Hyprland](https://hyprland.org/) as the window manager. The configuration files are located in the `~/.config/hypr/` directory.
 
-### Mako
+**Hyprpaper**: Hyprpaper is used to manage wallpapers.
+**Hypridle**: Hypridle is used to manage screen locking and power saving.
+**Hyprpicker**: Hyprpicker is used to manage color picking.
+**Hyprlock**: Hyprlock is used to lock the screen.
+**Mako**: Mako is used as the notification daemon.
+**Blueman**: Blueman is used to manage bluetooth devices.
+**Network Manager**: Network Manager is used to manage network connections.
 
-Mako is used as the notification daemon. The configuration file is located in the `~/.config/mako/config` file. 
-<!-- Nord is used as colorscheme thanks to [hex46 dotfiles](https://github.com/hex46/dotfiles-Nordic-Sway). -->
+## Waybar
 
-### bluetooth
-
-This setup uses [blueman](https://blueman.readthedocs.io/en/latest/) as the bluetooth manager. 
-
-### Network Manager
-
-This setup uses [network-manager-applet](https://wiki.gnome.org/Apps/NetworkManager) as the network manager.
+The [Waybar](https://github.com/Alexays/Waybar/) is used as the status bar. The configuration files are located in the `~/.config/waybar/` directory.
 
 ## Neovim
 
@@ -35,3 +34,4 @@ As shell, it uses [oh-my-zsh](https://ohmyz.sh/) with the following plugins:
 
 As terminal emulator, it uses [kitty](https://sw.kovidgoyal.net/kitty/). 
 <!-- The colorscheme is nord, thanks to the [connorholyday](https://github.com/connorholyday/nord-kitty) repository. -->
+
