@@ -70,7 +70,7 @@ ZSH_THEME="robbyrussell"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git zsh-autosuggestions zsh-syntax-highlighting fast-syntax-highlighting zsh-autocomplete)
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting fast-syntax-highlighting) # zsh-autocomplete
 
 source $ZSH/oh-my-zsh.sh
 
@@ -145,7 +145,8 @@ export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 export PATH=$JAVA_HOME/bin:$PATH
 
 # LLVM configuration
-export PATH=$PATH:/usr/lib/llvm14/bin
+# export PATH=$PATH:/usr/lib/llvm14/bin
+# export PATH=/usr/lib/llvm18/bin:$PATH
 
 # Latex configuration
 export TEXEDIT="nvim +%d %s"
