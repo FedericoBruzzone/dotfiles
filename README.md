@@ -17,6 +17,10 @@ This setup uses [Hyprland](https://hyprland.org/) as the window manager. The con
 
 The [Waybar](https://github.com/Alexays/Waybar/) is used as the status bar. The configuration files are located in the `~/.config/waybar/` directory.
 
+## Rofi
+
+[Rofi](https://davatorium.github.io/rofi/) is used as the application launcher. The configuration files are located in the `~/.config/rofi/` directory.
+
 ## Neovim
 
 This setup uses [neovim](https://neovim.io/) as the text editor.  All installed plugins are managed via **lazy.nvim** and listed in the `lazy.lua` file.
