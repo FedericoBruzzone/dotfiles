@@ -33,7 +33,7 @@
     "$HOME/.config/waybar/modules/mpd.jsonc"
   ],
   // ? Groups per side
-  "modules-left": ["group/leaf-inverse", "group/pill#1"],
+  "modules-left": ["group/leaf-inverse"], //, "group/pill#1"],
   "modules-center": ["group/pill-in#center"],
   "modules-right": ["group/pill#2", "group/leaf"],
   //  ? Declaring the groups
