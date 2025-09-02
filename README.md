@@ -31,6 +31,7 @@ As shell, it uses [oh-my-zsh](https://ohmyz.sh/) with the following plugins:
 - [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions.git)
 - [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting.git)
 - [zsh-fast-syntax-highlighting](https://github.com/zdharma-continuum/fast-syntax-highlighting.git)
+- [zsh-vi-mode](https://github.com/jeffreytse/zsh-vi-mode)
 
 [zsh-autocomplete](https://github.com/marlonrichert/zsh-autocomplete.git) is excluded.
 
