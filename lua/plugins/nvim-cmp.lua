@@ -10,11 +10,11 @@ return {
         local cmp = require("cmp")
 
         cmp.setup({
-            preselect = cmp.PreselectMode.Item, -- <— preselect first item
+            preselect = cmp.PreselectMode.Item, -- <— do not select the first item
             completion = { completeopt = "menu,menuone,noinsert" },
             window = {
                 documentation = cmp.config.window.bordered(),
-                -- completion = cmp.config.window.bordered(),
+                completion = cmp.config.window.bordered(),
             },
             mapping = cmp.mapping.preset.insert({
                 ["<CR>"]      = cmp.mapping.confirm({ select = false }),
@@ -44,3 +44,36 @@ return {
         })
     end,
 }
+
+-- return {
+--     "saghen/blink.cmp",
+--
+--     dependencies = { "rafamadriz/friendly-snippets" },
+--     version = "1.7.0",
+--
+--     opts = {
+--
+--         keymap = {
+--             preset = "enter",
+--             ["<Up>"] = { "select_prev", "fallback" },
+--             ["<Down>"] = { "select_next", "fallback" },
+--         },
+--
+--         appearance = {
+--             nerd_font_variant = "mono",
+--         },
+--
+--         signature = { enabled = true },
+--
+--         completion = {
+--             list = { selection = { preselect = true, auto_insert = false } },
+--             documentation = { auto_show = true },
+--             menu = {
+--                 max_height = 20
+--             }
+--         },
+--
+--         fuzzy = { implementation = "prefer_rust_with_warning" },
+--     },
+--     opts_extend = { "sources.default" },
+-- }

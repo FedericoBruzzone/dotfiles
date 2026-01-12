@@ -62,7 +62,8 @@ vim.opt.cursorlineopt = "line,number" -- valid values: "line", "number", "both"
 vim.g.loaded_netrw = 1
 -- Disable netrwPlugin at the very start of your init.lua (strongly advised)
 vim.g.loaded_netrwPlugin = 1
-
+-- Set window border style
+vim.opt.winborder = "rounded"
 
 -- Netrw settings
 -- vim.g.netrw_browse_split = 0

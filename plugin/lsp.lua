@@ -79,13 +79,10 @@ vim.api.nvim_create_autocmd('LspAttach', {
     end,
 })
 
-local caps = require("cmp_nvim_lsp").default_capabilities()
-
 vim.lsp.config['lua_ls'] = {
     cmd = { 'lua-language-server' },
     filetypes = { 'lua' },
     root_markers = { { '.luarc.json', '.luarc.jsonc' }, '.git' },
-    capabilities = caps,
     settings = {
         Lua = {
             runtime = { version = 'LuaJIT' },
@@ -109,7 +106,6 @@ vim.lsp.config['rust_analyzer'] = {
     cmd = { 'rust-analyzer' },
     filetypes = { 'rust' },
     root_markers = { 'Cargo.toml', 'rust-project.json', '.git' },
-    capabilities = caps,
     settings = {
         ['rust-analyzer'] = {
             cargo = {
@@ -136,7 +132,6 @@ vim.lsp.config['clangd'] = {
     },
     filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
     root_markers = { 'compile_commands.json', '.clangd', 'configure.ac', 'Makefile', '.git', },
-    capabilities = caps,
     init_options = {
         fallbackFlags = { '-std=c23' }, -- Default to C23
     },
