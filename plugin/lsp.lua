@@ -33,17 +33,6 @@ vim.diagnostic.config({
     }
 })
 
-local orig = vim.lsp.util.open_floating_preview
----@diagnostic disable-next-line: duplicate-set-field
-function vim.lsp.util.open_floating_preview(contents, syntax, opts, ...)
-    opts            = opts or {}
-    opts.border     = opts.border or 'rounded'
-    opts.max_width  = opts.max_width or 80
-    opts.max_height = opts.max_height or 24
-    opts.wrap       = opts.wrap ~= false
-    return orig(contents, syntax, opts, ...)
-end
-
 vim.api.nvim_create_autocmd('LspAttach', {
     group = vim.api.nvim_create_augroup('my.lsp', {}),
     callback = function(args)
@@ -57,7 +46,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
         map('n', 'gi', vim.lsp.buf.implementation)
         map('n', 'go', vim.lsp.buf.type_definition)
         map('n', 'gr', vim.lsp.buf.references)
-        map('n', '<D-i>', vim.lsp.buf.signature_help)
+        map({ 'n', 'i' }, '<C-k>', vim.lsp.buf.signature_help)
         map('n', '<leader>e', vim.diagnostic.open_float)
         map('n', '<F2>', vim.lsp.buf.rename)
         map({ 'n', 'x' }, '<D-S-i>', function() vim.lsp.buf.format({ async = true }) end)
@@ -170,3 +159,15 @@ vim.lsp.enable("texlab") -- via Mason
 --     root_markers = { 'package.json', '.git', 'config.jsonc' },
 --     capabilities = caps,
 -- }
+
+
+-- local orig = vim.lsp.util.open_floating_preview
+-- ---@diagnostic disable-next-line: duplicate-set-field
+-- function vim.lsp.util.open_floating_preview(contents, syntax, opts, ...)
+--     opts            = opts or {}
+--     opts.border     = opts.border or 'rounded'
+--     opts.max_width  = opts.max_width or 80
+--     opts.max_height = opts.max_height or 24
+--     opts.wrap       = opts.wrap ~= false
+--     return orig(contents, syntax, opts, ...)
+-- end

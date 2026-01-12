@@ -13,8 +13,22 @@ return {
             preselect = cmp.PreselectMode.Item, -- <— do not select the first item
             completion = { completeopt = "menu,menuone,noinsert" },
             window = {
-                documentation = cmp.config.window.bordered(),
-                completion = cmp.config.window.bordered(),
+                completion = cmp.config.window.bordered({
+                    border = "rounded",
+                }),
+                documentation = cmp.config.window.bordered({
+                    border = "rounded",
+                }),
+            },
+            formatting = {
+                fields = { "abbr", "kind", "menu" },
+                format = function(entry, vim_item)
+                    local max_width = 50
+                    if string.len(vim_item.abbr) > max_width then
+                        vim_item.abbr = string.sub(vim_item.abbr, 1, max_width) .. "…"
+                    end
+                    return vim_item
+                end,
             },
             mapping = cmp.mapping.preset.insert({
                 ["<CR>"]      = cmp.mapping.confirm({ select = false }),
@@ -44,36 +58,3 @@ return {
         })
     end,
 }
-
--- return {
---     "saghen/blink.cmp",
---
---     dependencies = { "rafamadriz/friendly-snippets" },
---     version = "1.7.0",
---
---     opts = {
---
---         keymap = {
---             preset = "enter",
---             ["<Up>"] = { "select_prev", "fallback" },
---             ["<Down>"] = { "select_next", "fallback" },
---         },
---
---         appearance = {
---             nerd_font_variant = "mono",
---         },
---
---         signature = { enabled = true },
---
---         completion = {
---             list = { selection = { preselect = true, auto_insert = false } },
---             documentation = { auto_show = true },
---             menu = {
---                 max_height = 20
---             }
---         },
---
---         fuzzy = { implementation = "prefer_rust_with_warning" },
---     },
---     opts_extend = { "sources.default" },
--- }
