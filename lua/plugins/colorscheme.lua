@@ -81,6 +81,7 @@ return {
                 light = "lotus"
             },
         })
+        vim.o.background = "light"
         vim.cmd("colorscheme kanagawa")
         -- vim.api.nvim_set_hl(0, "Normal", { bg = "Black" })
         -- vim.api.nvim_set_hl(0, "SignColumn", { bg = "Black" })
