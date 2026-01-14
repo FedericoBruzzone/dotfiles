@@ -31,7 +31,6 @@ vim.api.nvim_set_keymap('n', '<S-Down>', ':resize -2<CR>', { noremap = true, sil
 vim.api.nvim_set_keymap('n', '<S-Left>', ':vertical resize -2<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<S-Right>', ':vertical resize +2<CR>', { noremap = true, silent = true })
 
-
 -- Keybind to switch between background dark and light
 local function toggle_background()
     if vim.o.background == "dark" then
