@@ -90,6 +90,29 @@ vim.lsp.config['lua_ls'] = {
     },
 }
 
+vim.api.nvim_create_user_command('RustExpandMacro', function()
+    local clients = vim.lsp.get_clients({ name = 'rust_analyzer' })
+    local client = clients[1]
+
+    if client then
+        client:request("rust-analyzer/expandMacro", vim.lsp.util.make_position_params(0, nil), function(err, result)
+            if err or not result then return end
+            -- vim.print(result)
+            -- print(result.expansion)
+
+
+            local lines = vim.split(result.expansion, "\n")
+            local buf = vim.api.nvim_create_buf(false, true)
+
+            vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+            vim.api.nvim_set_option_value('filetype', 'rust', { buf = buf })
+
+            vim.cmd("vsplit")
+            vim.api.nvim_set_current_buf(buf)
+        end)
+    end
+end, {})
+
 -- Rust via rust-analyzer
 vim.lsp.config['rust_analyzer'] = {
     cmd = { 'rust-analyzer' },
