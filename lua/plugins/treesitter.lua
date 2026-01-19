@@ -37,6 +37,17 @@ return {
                 "llvm"
             })
 
+            -- Remap to enable/disable treesitter
+            vim.keymap.set('n', '<leader>ts', function()
+                if vim.treesitter.highlighter.active[vim.api.nvim_get_current_buf()] then
+                    vim.treesitter.stop()
+                    print("Treesitter disabled")
+                else
+                    vim.treesitter.start()
+                    print("Treesitter enabled")
+                end
+            end, { desc = "Toggle Treesitter" })
+
             -- vim.api.nvim_create_autocmd('FileType', {
             --     -- pattern = { 'yml', 'llvm', 'gitcommit', 'c', 'cpp', 'json', 'python' },
             --     -- pattern  = '*',
