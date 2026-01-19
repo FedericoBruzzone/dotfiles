@@ -170,8 +170,9 @@ end
 
 vim.lsp.enable("rust_analyzer")
 vim.lsp.enable("clangd")
-vim.lsp.enable("lua_ls") -- via Mason
-vim.lsp.enable("texlab") -- via Mason
+vim.lsp.enable("lua_ls")   -- via Mason
+vim.lsp.enable("texlab")   -- via Mason
+vim.lsp.enable("tinymist") -- via Mason
 
 
 --- =====Usual common settings for some *unused* local LSP servers=====
