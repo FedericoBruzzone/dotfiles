@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# align.sh — align the current branch (or a chosen one) with origin/upstream and push
+#
+# Usage:
+#   align.sh            # use current branch
+#   align.sh -b branch  # explicitly set branch
+#   DRY_RUN=1 align.sh  # print commands instead of executing
+#
+# Steps (for the chosen branch):
+#   1) git fetch origin
+#   2) rebase onto origin/<branch>
+#   3) if upstream exists and has the branch, fetch & rebase onto upstream/<branch>
+#   4) push to origin with --force-with-lease
+#
+# Notes:
+# - Requires a clean working tree (no staged/unstaged changes).
+# - Stops on any error; force-push is guarded with --force-with-lease.
+
+DRY_RUN="${DRY_RUN:-0}"
+ALLOW_DIRTY="${ALLOW_DIRTY:-0}"
+branch=""
+
+usage() {
+  cat <<'EOF'
+align.sh [-b branch] [-f]
+
+Options:
+  -b branch  Branch to align (default: current branch)
+  -f         Allow dirty working tree (skip clean check)
+  -h         Show this help
+Environment:
+  DRY_RUN=1      Print commands instead of executing
+  ALLOW_DIRTY=1  Skip clean worktree check
+EOF
+}
+
+run() {
+  if [[ "$DRY_RUN" == "1" ]]; then
+    printf '[DRY] %s\n' "$*"
+  else
+    printf '[RUN] %s\n' "$*\n"
+    eval "$@"
+  fi
+}
+
+require_clean_worktree() {
+  if [[ -n "$(git status --porcelain)" ]]; then
+    echo "Error: working tree is not clean. Commit/stash changes first." >&2
+    exit 1
+  fi
+}
+
+current_branch() {
+  local b
+  b="$(git rev-parse --abbrev-ref HEAD)"
+  if [[ "$b" == "HEAD" ]]; then
+    echo "Error: detached HEAD; specify a branch with -b." >&2
+    exit 1
+  fi
+  echo "$b"
+}
+
+branch_exists_on_remote() {
+  local remote="$1" ref="$2"
+  git ls-remote --exit-code --heads "$remote" "$ref" >/dev/null 2>&1
+}
+
+while getopts "b:fh" opt; do
+  case "$opt" in
+    b) branch="$OPTARG" ;;
+    f) ALLOW_DIRTY="1" ;;
+    h) usage; exit 0 ;;
+    *) usage; exit 1 ;;
+  esac
+done
+
+if [[ -z "$branch" ]]; then
+  branch="$(current_branch)"
+fi
+
+if [[ "$ALLOW_DIRTY" != "1" ]]; then
+  require_clean_worktree
+fi
+
+echo "Aligning branch: $branch"
+
+# Fetch origin and rebase
+run "git fetch origin" "$branch"
+if branch_exists_on_remote origin "$branch"; then
+  run "git checkout \"$branch\""
+  run "git rebase \"origin/$branch\""
+else
+  echo "Warning: origin/$branch not found; skipping rebase onto origin." >&2
+fi
+
+# Fetch upstream and rebase (if available)
+if git remote get-url upstream >/dev/null 2>&1; then
+  run "git fetch -u upstream" "$branch"
+  if branch_exists_on_remote upstream "$branch"; then
+    run "git checkout \"$branch\""
+    run "git rebase \"upstream/$branch\""
+  else
+    echo "Info: upstream/$branch not found; skipping upstream rebase." >&2
+  fi
+else
+  echo "Info: upstream remote not configured; skipping upstream rebase." >&2
+fi
+
+# Push to origin with force-with-lease
+if branch_exists_on_remote origin "$branch"; then
+  run "git push origin \"$branch\" --force-with-lease"
+else
+  # If the branch doesn't exist remotely, a normal push suffices
+  run "git push origin \"$branch\" --force-with-lease"
+fi

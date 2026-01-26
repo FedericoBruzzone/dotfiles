@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Configuration ---
+LLVM_DIR=${LLVM_DIR:-~/dev/llvm-project/llvm-build}
+BUILD_DIR=./llvm-build
+
+# --- Helper Functions ---
+print_usage() {
+    echo "Usage: $0 <command> [arguments]"
+    echo ""
+    echo "Commands:"
+    echo "  config [BUILD_TYPE]                    Configure the project with CMake."
+    echo "  build                                  Build the project using ninja."
+    echo "  rebuild                                Re-configure and build the project from scratch."
+    echo "  run-debug <file.ll> [LEVEL] [EMIT]     Run the opt tool on a given LLVM IR file with debug info."
+    echo "  run-pass <file.ll> <passname> [EMIT]   Run a specific optimization pass on a given LLVM IR file."
+    echo "  clang-pass <file.c> <passname> [LEVEL] Debug a pass during Clang compilation."
+    echo "  test <folder|file.ll>                  Run the lit test suite."
+    echo "  update-test-checks <file.ll>           Update the FileCheck patterns in the given test file."
+    echo "  pipeline [LEVEL]                       Print the optimization pipeline (default LEVEL: -O0)."
+    echo "  emit-llvm <file.c> [LEVEL]             Generate LLVM IR from a C file (default LEVEL: -O0)."
+    echo "  clean                                  Clean the build directory."
+    echo "  help                                   Show this help message."
+    echo ""
+    echo "Environment:"
+    echo "  LLVM_DIR    Path to LLVM installation (default: ~/dev/llvm-project/llvm-build)"
+    echo ""
+    echo "Options for 'run-debug' command:"
+    echo "  BUILD_TYPE  Build type for configuration (e.g., Debug, Release). Default is Debug."
+    echo "  LEVEL       Optimization level (e.g., -O0, -O1, -O2, -O3, -Os, -Oz). Default is -O0"
+    echo "  EMIT        Type of output to emit: none, llvm, bc. Default is none."
+
+}
+
+# --- Main Script Logic ---
+
+# Show help message if no arguments are provided
+if [ $# -eq 0 ]; then
+    print_usage
+    exit 0
+fi
+
+COMMAND=$1
+shift # Remove the command from the arguments list
+
+case $COMMAND in
+    config)
+        BUILD_TYPE=${1:-Debug}
+        echo "--- Configuring project ---"
+        mkdir -p ${BUILD_DIR}
+        cmake -S llvm -B ${BUILD_DIR} -G Ninja \
+            -DLLVM_ENABLE_PROJECTS="clang" \
+            -DLLVM_ENABLE_RUNTIMES="" \
+            -DLLVM_ENABLE_EH=ON \
+            -DLLVM_ENABLE_RTTI=ON \
+            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+            -DLLVM_ENABLE_ASSERTIONS=ON
+        ;;
+
+    build)
+        echo "--- Building project ---"
+        ninja -C ${BUILD_DIR}
+        ;;
+
+    rebuild)
+        echo "--- Rebuilding project from scratch ---"
+        rm -rf ${BUILD_DIR}
+        $0 config
+        $0 build
+        ;;
+
+    run-debug)
+            if [ -z "$1" ]; then
+                echo "Error: Missing file argument for 'run' command."
+                print_usage
+                exit 1
+            fi
+
+            INPUT_FILE=$1
+            OPT_LEVEL=${2:--O0}
+            EMIT_TYPE=${3:-none} # none, llvm, bc
+
+            EMIT_FLAGS=""
+            case "$EMIT_TYPE" in
+                llvm)
+                    EMIT_FLAGS="-S -o ${INPUT_FILE%.*}.opt.ll"
+                    ;;
+                bc)
+                    EMIT_FLAGS="-o ${INPUT_FILE%.*}.opt.bc"
+                    ;;
+                none)
+                    # Output to /dev/null to avoid generating files
+                    EMIT_FLAGS="-S -o /dev/null"
+                    ;;
+                *)
+                    echo "Warning: Unknown emit type '$EMIT_TYPE'. Defaulting to none."
+                    EMIT_FLAGS="-S -o /dev/null"
+                    ;;
+            esac
+
+            echo "--- Running opt on ${INPUT_FILE} (Emit: ${EMIT_TYPE}) ---"
+
+            ${LLVM_DIR}/bin/opt \
+                ${OPT_LEVEL} \
+                -stats -debug \
+                ${EMIT_FLAGS} \
+                ${INPUT_FILE}
+        ;;
+
+    run-pass)
+        if [ -z "$1" ] || [ -z "$2" ]; then
+            echo "Error: Missing arguments for 'run-pass' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        PASS_NAME=$2
+        EMIT_TYPE=${3:-none}
+
+        EMIT_FLAGS=""
+        case "$EMIT_TYPE" in
+            llvm)
+                EMIT_FLAGS="-S -o ${INPUT_FILE%.*}.${PASS_NAME}.ll"
+                ;;
+            bc)
+                EMIT_FLAGS="-o ${INPUT_FILE%.*}.${PASS_NAME}.bc"
+                ;;
+            none)
+                EMIT_FLAGS="-S -o /dev/null"
+                ;;
+            *)
+                echo "Warning: Unknown emit type '$EMIT_TYPE'. Defaulting to none."
+                EMIT_FLAGS="-S -o /dev/null"
+                ;;
+        esac
+
+        echo "--- Running pass ${PASS_NAME} on ${INPUT_FILE} (Emit: ${EMIT_TYPE}) ---"
+
+        ${LLVM_DIR}/bin/opt \
+            -passes="${PASS_NAME}" \
+            -debug-only="${PASS_NAME}" \
+            -stats \
+            ${EMIT_FLAGS} \
+            "${INPUT_FILE}"
+        ;;
+
+    clang-pass)
+        if [ -z "$1" ] || [ -z "$2" ]; then
+            echo "Error: Missing arguments for 'clang-pass' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        PASS_NAME=$2
+        OPT_LEVEL=${3:--O0}
+        SYSROOT=""
+        [[ "$OSTYPE" == "darwin"* ]] && SYSROOT="-isysroot $(xcrun --show-sdk-path)"
+        echo "--- Running Clang with pass ${PASS_NAME} on ${INPUT_FILE} ---"
+        ${LLVM_DIR}/bin/clang \
+            ${OPT_LEVEL} \
+            -mllvm -debug-only="${PASS_NAME}" \
+            -fno-discard-value-names \
+            -S -emit-llvm ${SYSROOT} \
+            ${INPUT_FILE} -o -
+        ;;
+
+    test)
+        echo "--- Running lit tests ---"
+        INPUT_FOLDER=${1}
+        ${LLVM_DIR}/bin/llvm-lit -a -v ${INPUT_FOLDER}
+        ;;
+
+    update-test-checks)
+        if [ -z "$1" ]; then
+            echo "Error: Missing input file for 'update-test-checks' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        OUTPUT_FILE="${INPUT_FILE%.ll}.updated.ll"
+        echo "--- Updating FileCheck patterns in ${INPUT_FILE} ---"
+        # ${LLVM_DIR}/bin/opt  -S ${INPUT_FILE} -o ${OUTPUT_FILE}  | ${LLVM_DIR}/bin/FileCheck --update-checks ${INPUT_FILE} -
+        # python3 llvm/utils/update_test_checks.py --opt-binary=./llvm-build/bin/opt --version 5 llvm/test/Transforms/TailCallElim/tre-call-readonly-nocapture.ll
+        python3 ${LLVM_DIR}/utils/update_test_checks.py \
+            --opt-binary=${LLVM_DIR}/bin/opt \
+            --version 5 \
+            ${INPUT_FILE}
+        ;;
+
+    pipeline)
+        # Set default optimization level to -O0 if not provided
+        OPT_LEVEL=${1:--O0}
+
+        echo "--- Printing pipeline for ${OPT_LEVEL} ---"
+        ${LLVM_DIR}/bin/opt --print-pipeline-passes ${OPT_LEVEL} -S /dev/null -o /dev/null
+        ;;
+
+    emit-llvm)
+        if [ -z "$1" ]; then
+            echo "Error: Missing input file for 'emit-llvm' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        OPT_LEVEL=${2:--O0}
+        OUTPUT_FILE="${INPUT_FILE%.c}.ll"
+
+        echo "--- Emitting LLVM IR for ${INPUT_FILE} to ${OUTPUT_FILE} with ${OPT_LEVEL} ---"
+        ${LLVM_DIR}/bin/clang \
+            -S -emit-llvm ${OPT_LEVEL} \
+            -fno-discard-value-names \
+            ${INPUT_FILE} -o ${OUTPUT_FILE}
+        ;;
+
+    clean)
+        echo "--- Cleaning build directory ---"
+        rm -rf ${BUILD_DIR}
+        ;;
+
+
+    help|*)
+        print_usage
+        ;;
+esac
+
+echo "--- Done ---"
