@@ -24,3 +24,7 @@ tags
 # Ignore all .undodir directories at any depth
 **/undodir/
 
+.backup
+.config/zed/prompts
+.config/zed/themes
+.config/zed/conversations

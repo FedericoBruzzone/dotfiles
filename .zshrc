@@ -78,6 +78,23 @@ export EDITOR=nvim
     export PATH="/usr/local/sbin:$PATH"
 # }
 
+
+# openvpn configuration {
+if [[ "$OSTYPE" == "darwin"* ]]; then
+ if [[ "$(uname -m)" == "arm64" ]]; then
+     export PATH="/opt/homebrew/opt/openvpn/sbin/:$PATH"
+ else
+     export PATH="/usr/local/opt/openvpn/sbin/:$PATH"
+ fi
+fi
+# }
+
+
+
+# dotfiles bin {
+    export PATH="$HOME/.bin:$PATH"
+# }
+
 # Svn configuration {
  export SVN_EDITOR=nvim
 # }
@@ -144,7 +161,7 @@ export EDITOR=nvim
 [[ ! -r '/Users/federicobruzzone/.opam/opam-init/init.zsh' ]] || source '/Users/federicobruzzone/.opam/opam-init/init.zsh' > /dev/null 2> /dev/null
 # }
 
-# perl configuration { 
+# perl configuration {
 if [[ "$OSTYPE" == "darwin"* ]]; then
  if [[ "$(uname -m)" == "arm64" ]]; then
   # By default non-brewed cpan modules are installed to the Cellar. If you wish
@@ -178,10 +195,10 @@ fi
 # # llvm@18 configuration {
 #  # To use the bundled libc++ please add the following LDFLAGS:
 #  export LDFLAGS="-L/usr/local/opt/llvm@18/lib/c++ -L/usr/local/opt/llvm@18/lib -lunwind"
-# 
+#
 #  # If you need to have llvm@18 first in your PATH, run:
 #  export PATH="/usr/local/opt/llvm@18/bin:$PATH"
-# 
+#
 #  # For compilers to find llvm@18 you may need to set:
 #  export LDFLAGS="-L/usr/local/opt/llvm@18/lib $LDFLAGS"
 #  export CPPFLAGS="-I/usr/local/opt/llvm@18/include"
@@ -267,10 +284,10 @@ svg-convert () {
     echo "Usage: svg-convert input_file.svg"
     return 1
   fi
-  
+
   # Extracts the base name of the file (e.g., "my_drawing" from "my_drawing.svg")
   BASE_NAME=$(basename "$1" .svg)
-  
+
   # Execute the conversion
   # "$1" is the input file (e.g., my_drawing.svg)
   # "${BASE_NAME}.pdf" is the output file (e.g., my_drawing.pdf)
