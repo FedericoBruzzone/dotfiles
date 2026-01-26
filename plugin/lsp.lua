@@ -175,6 +175,39 @@ vim.lsp.enable("texlab")   -- via Mason
 vim.lsp.enable("tinymist") -- via Mason
 
 
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'exprlang',
+    callback = function()
+        local cmd = {
+            "java",
+            "-jar",
+            "/Users/federicobruzzone/dev/neverlang-commons/trunk/neverlang-commons/exprlang/build/libs/exprlang-client.jar"
+        }
+        local client = vim.lsp.start({
+            name = 'exprlang',
+            cmd = cmd,
+            root_dir = vim.fs.dirname(vim.fs.find({ 'start.lsp', 'build.gradle' }, { upward = true })[1]),
+        })
+        vim.lsp.buf_attach_client(0, client)
+    end,
+})
+
+-- vim.api.nvim_create_autocmd('FileType', {
+--     pattern = 'exprlang',
+--     callback = function()
+--         -- os.execute('./runLSP.sh > /dev/null 2>&1 &') -- UNUSED
+--         -- os.execute('./gradlew runLSP -q --console=plain > /dev/null 2>&1 &')
+--         -- os.execute('sleep 1')
+--
+--         vim.lsp.start({
+--             name = 'exprlang',
+--             cmd = vim.lsp.rpc.connect('127.0.0.1', 5123),
+--             root_dir = vim.fs.dirname(vim.fs.find({ 'start.lsp', 'build.gradle' }, { upward = true })[1]),
+--             -- filetypes = { 'tst', 'nl },
+--         })
+--     end,
+-- })
+
 --- =====Usual common settings for some *unused* local LSP servers=====
 
 -- vim.lsp.config['jsonls'] = {
