@@ -24,5 +24,3 @@ tags
 # Ignore all .undodir directories at any depth
 **/undodir/
 
-# Json files
-*.json
