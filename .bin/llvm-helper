@@ -20,6 +20,7 @@ print_usage() {
     echo "  update-test-checks <file.ll>           Update the FileCheck patterns in the given test file."
     echo "  pipeline [LEVEL]                       Print the optimization pipeline (default LEVEL: -O0)."
     echo "  emit-llvm <file.c> [LEVEL]             Generate LLVM IR from a C file (default LEVEL: -O0)."
+    echo "  llvm-compile <file.ll> [OUT] [LLC_OPT]  Compile LLVM IR (.ll/.bc) to an executable using llc and clang (default LLC_OPT: -O0)."
     echo "  clean                                  Clean the build directory."
     echo "  help                                   Show this help message."
     echo ""
@@ -29,7 +30,7 @@ print_usage() {
     echo "Options for 'run-debug' command:"
     echo "  BUILD_TYPE  Build type for configuration (e.g., Debug, Release). Default is Debug."
     echo "  LEVEL       Optimization level (e.g., -O0, -O1, -O2, -O3, -Os, -Oz). Default is -O0"
-    echo "  EMIT        Type of output to emit: none, llvm, bc. Default is none."
+    echo "  EMIT        Type of output to emit: none, llvm, bc, stdout. Default is stdout."
 
 }
 
@@ -79,7 +80,7 @@ case $COMMAND in
 
             INPUT_FILE=$1
             OPT_LEVEL=${2:--O0}
-            EMIT_TYPE=${3:-none} # none, llvm, bc
+            EMIT_TYPE=${3:-stdout} # none, llvm, bc
 
             EMIT_FLAGS=""
             case "$EMIT_TYPE" in
@@ -89,9 +90,13 @@ case $COMMAND in
                 bc)
                     EMIT_FLAGS="-o ${INPUT_FILE%.*}.opt.bc"
                     ;;
+                stdout)
+                    # Output to stdout
+                    EMIT_FLAGS="-S -o -"
+                    ;;
                 none)
                     # Output to /dev/null to avoid generating files
-                    EMIT_FLAGS="-S -o /dev/null"
+                    EMIT_FLAGS="-S -o -"
                     ;;
                 *)
                     echo "Warning: Unknown emit type '$EMIT_TYPE'. Defaulting to none."
@@ -125,6 +130,9 @@ case $COMMAND in
                 ;;
             bc)
                 EMIT_FLAGS="-o ${INPUT_FILE%.*}.${PASS_NAME}.bc"
+                ;;
+            stdout)
+                EMIT_FLAGS="-S -o -"
                 ;;
             none)
                 EMIT_FLAGS="-S -o /dev/null"
@@ -205,12 +213,39 @@ case $COMMAND in
         INPUT_FILE=$1
         OPT_LEVEL=${2:--O0}
         OUTPUT_FILE="${INPUT_FILE%.c}.ll"
+        SYSROOT=""
+        [[ "$OSTYPE" == "darwin"* ]] && SYSROOT="-isysroot $(xcrun --show-sdk-path)"
 
         echo "--- Emitting LLVM IR for ${INPUT_FILE} to ${OUTPUT_FILE} with ${OPT_LEVEL} ---"
         ${LLVM_DIR}/bin/clang \
             -S -emit-llvm ${OPT_LEVEL} \
             -fno-discard-value-names \
-            ${INPUT_FILE} -o ${OUTPUT_FILE}
+            ${INPUT_FILE} -o ${OUTPUT_FILE} ${SYSROOT}
+        ;;
+
+    llvm-compile)
+        if [ -z "$1" ]; then
+            echo "Error: Missing input file for 'llvm-compile' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        OUT_NAME=${2:-${INPUT_FILE%.*}}
+        LLC_OPT=${3:--O0}
+        OBJ_FILE="${OUT_NAME}.o"
+        SYSROOT=""
+        [[ "$OSTYPE" == "darwin"* ]] && SYSROOT="-isysroot $(xcrun --show-sdk-path)"
+
+        echo "--- Compiling ${INPUT_FILE} to executable ${OUT_NAME} (llc opts: ${LLC_OPT}) ---"
+
+        # Compile LLVM IR to an object file
+        ${LLVM_DIR}/bin/llc ${LLC_OPT} -filetype=obj "${INPUT_FILE}" -o "${OBJ_FILE}"
+
+        # Link the object file to an executable
+        ${LLVM_DIR}/bin/clang "${OBJ_FILE}" -o "${OUT_NAME}" ${SYSROOT}
+
+        # Remove intermediate object file
+        rm -f "${OBJ_FILE}"
         ;;
 
     clean)
