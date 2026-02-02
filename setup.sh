@@ -17,6 +17,7 @@ ITEMS=(
   ".bin"
   ".zshrc"
   ".gitconfig"
+  ".gitignore_global"
   ".config/nvim"
   ".config/ghostty"
   ".config/zed"
