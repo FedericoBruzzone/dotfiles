@@ -55,8 +55,9 @@ zstyle ':vcs_info:*' actionformats "(%s)-[%b|%a%u%c] " "zsh: %r"
 zstyle ':vcs_info:*' formats       "(%s)-[%b%u%c]%} " "zsh: %r"
 
 # Prompt
-PS1="%n@%m:%~$ "
-PS2="%_> "#
+# PS1="%n@%m:%~$ "
+PS1="%F{6}%~%f$ "
+# PS2="%_> "#
 
 # zsh completition
 # Check if macOS x86_64
