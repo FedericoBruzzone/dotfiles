@@ -155,6 +155,8 @@ vim.filetype.add({
     },
 })
 
+
+
 if vim.lsp.inlay_hint then
     vim.lsp.inlay_hint.enable(true, { 0 })
     -- Toggle inlay hints
@@ -173,6 +175,7 @@ vim.lsp.enable("clangd")
 vim.lsp.enable("lua_ls")   -- via Mason
 vim.lsp.enable("texlab")   -- via Mason
 vim.lsp.enable("tinymist") -- via Mason
+
 
 
 vim.api.nvim_create_autocmd('FileType', {
@@ -228,3 +231,22 @@ vim.api.nvim_create_autocmd('FileType', {
 --     opts.wrap       = opts.wrap ~= false
 --     return orig(contents, syntax, opts, ...)
 -- end
+
+
+-- Rocq/Coq via vscoq-language-server
+-- vim.lsp.config['vsrocqtop'] = {
+--     cmd = { 'vsrocqtop' },
+--     filetypes = { 'coq', 'v' },
+--     root_markers = { '_CoqProject', '_RocqProject', '.git' },
+--     settings = {
+--         vscoq = {
+--             proof = {
+--                 delegation = "None", -- Avoid syncronization issues
+--             },
+--             completion = {
+--                 enable = true,
+--             },
+--         },
+--     },
+-- }
+-- vim.lsp.enable("vsrocqtop")

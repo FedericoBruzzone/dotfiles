@@ -154,12 +154,19 @@ fi
  }
 # }
 
+# eval $(opam env --switch=default)
 # opam configuration {
 # This is useful if you're using opam as it adds:
 #   - the correct directories to the PATH
 #   - auto-completion for the opam binary
 # This section can be safely removed at any time if needed.
 [[ ! -r '/Users/federicobruzzone/.opam/opam-init/init.zsh' ]] || source '/Users/federicobruzzone/.opam/opam-init/init.zsh' > /dev/null 2> /dev/null
+
+# Allows GSettings to find the schemas installed via Homebrew
+export GSETTINGS_SCHEMA_DIR="/opt/homebrew/share/glib-2.0/schemas"
+# Merge XDG_DATA_DIRS with opam share directory
+export XDG_DATA_DIRS="/opt/homebrew/share:$(opam var share):$XDG_DATA_DIRS"
+
 # }
 
 # perl configuration {
@@ -271,7 +278,10 @@ export GEMINI_API_KEY="AIzaSyA3Q1Cpp9l9aHC-ul2DobK5yhlSaM3Sb9Y"
 
 autoload -Uz colors && colors
 export CLICOLOR=1
-export GREP_OPTIONS='--color=always'
+alias ls='ls -G' # -G enables colorized output on macOS
+
+# export GREP_OPTIONS='--color=always'
+alias grep='grep --color=auto'
 
 alias ll='ls -alF'
 alias la='ls -A'
