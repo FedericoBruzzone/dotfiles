@@ -13,8 +13,8 @@ return {
                         vim.keymap.set("n", "<C-h>", "<cmd>VsRocq stepBackward<CR>", opts)
                         vim.keymap.set("i", "<C-l>", "<cmd>VsRocq stepForward<CR>", opts)
                         vim.keymap.set("i", "<C-h>", "<cmd>VsRocq stepBackward<CR>", opts)
-                        vim.keymap.set("n", "<leader>cc", "<cmd>VsRocq interpretToPoint<CR>", opts)
-                        vim.keymap.set("n", "<leader>ce", "<cmd>VsRocq interpretToEnd<CR>", opts)
+                        vim.keymap.set("n", "<leader>ch", "<cmd>VsRocq interpretToPoint<CR>", opts)
+                        -- vim.keymap.set("n", "<leader>ce", "<cmd>VsRocq interpretToEnd<CR>", opts)
                     end,
                 },
                 vsrocq = {

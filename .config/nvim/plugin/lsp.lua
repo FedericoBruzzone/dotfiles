@@ -157,6 +157,32 @@ vim.filetype.add({
 
 
 
+vim.lsp.config['ocamllsp'] = {
+    cmd = { 'ocamllsp' },
+    filetypes = {
+        'ocaml',
+        'ocaml.interface',
+        'ocaml.menhir',
+        'ocaml.ocamllex',
+        'dune',
+        'reason'
+    },
+    root_markers = {
+        { 'dune-project', 'dune-workspace' },
+        { "*.opam",       "esy.json",      "package.json" },
+        '.git'
+    },
+    settings = {},
+}
+
+
+vim.lsp.enable("rust_analyzer")
+vim.lsp.enable("clangd")
+vim.lsp.enable("ocamllsp")
+vim.lsp.enable("lua_ls")   -- via Mason
+vim.lsp.enable("texlab")   -- via Mason
+vim.lsp.enable("tinymist") -- via Mason
+
 if vim.lsp.inlay_hint then
     vim.lsp.inlay_hint.enable(true, { 0 })
     -- Toggle inlay hints
@@ -168,15 +194,6 @@ if vim.lsp.inlay_hint then
         end
     end)
 end
-
-
-vim.lsp.enable("rust_analyzer")
-vim.lsp.enable("clangd")
-vim.lsp.enable("lua_ls")   -- via Mason
-vim.lsp.enable("texlab")   -- via Mason
-vim.lsp.enable("tinymist") -- via Mason
-
-
 
 vim.api.nvim_create_autocmd('FileType', {
     pattern = 'exprlang',
