@@ -279,13 +279,11 @@ export GEMINI_API_KEY="AIzaSyA3Q1Cpp9l9aHC-ul2DobK5yhlSaM3Sb9Y"
 autoload -Uz colors && colors
 export CLICOLOR=1
 alias ls='ls -G' # -G enables colorized output on macOS
-
-# export GREP_OPTIONS='--color=always'
 alias grep='grep --color=auto'
-
 alias ll='ls -alF'
 alias la='ls -A'
 alias ..='cd ..'
+alias g='git'
 
 # Function to convert SVG to PDF using rsvg-convert
 svg-convert () {
