@@ -20,7 +20,7 @@ print_usage() {
     echo "  update-test-checks <file.ll>           Update the FileCheck patterns in the given test file."
     echo "  pipeline [LEVEL]                       Print the optimization pipeline (default LEVEL: -O0)."
     echo "  emit-llvm <file.c> [LEVEL]             Generate LLVM IR from a C file (default LEVEL: -O0)."
-    echo "  llvm-compile <file.ll> [OUT] [LLC_OPT]  Compile LLVM IR (.ll/.bc) to an executable using llc and clang (default LLC_OPT: -O0)."
+    echo "  llvm-compile <file.ll> [OUT] [LLC_OPT] Compile LLVM IR (.ll/.bc) to an executable using llc and clang (default LLC_OPT: -O0)."
     echo "  clean                                  Clean the build directory."
     echo "  help                                   Show this help message."
     echo ""
