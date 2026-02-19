@@ -27,7 +27,7 @@
   "agent": {
     "default_model": {
       "provider": "copilot_chat",
-      "model": "oswe-vscode-prime",
+      "model": "gpt-5",
     },
     "inline_assistant_model": {
       "provider": "copilot_chat",
@@ -68,7 +68,7 @@
     },
   },
   // LSP
-  "format_on_save": "on",
+  // "format_on_save": "on",
   "lsp": {
     "rust-analyzer": {
       "initialization_options": {

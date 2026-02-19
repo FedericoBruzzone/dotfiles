@@ -175,12 +175,16 @@ vim.lsp.config['ocamllsp'] = {
     settings = {},
 }
 
+vim.lsp.config['html'] = {}
+vim.lsp.config['css'] = {}
 
 vim.lsp.enable("rust_analyzer")
 vim.lsp.enable("clangd")
 vim.lsp.enable("ocamllsp")
 vim.lsp.enable("lua_ls")   -- via Mason
 vim.lsp.enable("texlab")   -- via Mason
+vim.lsp.enable("html")     -- via Mason
+vim.lsp.enable("css")      -- via Mason
 vim.lsp.enable("tinymist") -- via Mason
 
 if vim.lsp.inlay_hint then

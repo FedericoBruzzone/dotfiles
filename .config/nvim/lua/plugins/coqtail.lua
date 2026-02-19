@@ -1,6 +1,7 @@
 return {
     {
         'whonore/Coqtail',
+        ft = "coq", -- Load only on Coq files
         init = function()
             vim.g.loaded_coqtail = 1
             vim.g["coqtail#supported"] = 0
@@ -28,8 +29,8 @@ return {
             },
             vsrocq = {
                 proof = {
-                    -- mode = "Manual", -- "Continuous" or "Manual"
-                    -- cursor = { sticky = true },
+                    mode = "Manual", -- "Continuous" or "Manual"
+                    cursor = { sticky = true },
                 },
                 completion = {
                     enable = true,
