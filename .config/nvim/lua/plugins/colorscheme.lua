@@ -81,7 +81,7 @@ return {
                 light = "lotus"
             },
         })
-        vim.cmd("colorscheme kanagawa-wave")
+        vim.cmd("colorscheme kanagawa-dragon")
         -- vim.api.nvim_set_hl(0, "Normal", { bg = "Black" })
         -- vim.api.nvim_set_hl(0, "SignColumn", { bg = "Black" })
 

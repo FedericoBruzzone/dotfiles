@@ -10,7 +10,7 @@
   "theme": {
     "mode": "dark",
     "light": "Kanagawa Lotus",
-    "dark": "Kanagawa Wave",
+    "dark": "Kanagawa Dragon",
   },
   // AI
   "edit_predictions": {
@@ -27,7 +27,7 @@
   "agent": {
     "default_model": {
       "provider": "copilot_chat",
-      "model": "gpt-5",
+      "model": "claude-opus-4.6",
     },
     "inline_assistant_model": {
       "provider": "copilot_chat",
