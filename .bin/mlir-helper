@@ -1,0 +1,283 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Configuration ---
+LLVM_DIR=${LLVM_DIR:-~/dev/llvm-project/llvm-build}
+BUILD_DIR=./mlir-build
+LLVM_PATH_PREFIX=$(pwd)/llvm-build/bin
+
+# --- Helper Functions ---
+print_usage() {
+    echo "Usage: $0 <command> [arguments]"
+    echo ""
+    echo "Commands:"
+    echo "  config [BUILD_TYPE]                        Configure the MLIR project with CMake."
+    echo "  build                                      Build the project using ninja."
+    echo "  rebuild                                    Re-configure and build the project from scratch."
+    echo "  run-debug <file.mlir> [PASSES] [EMIT]      Run mlir-opt on a given MLIR file with debug info."
+    echo "  run-pass <file.mlir> <passname> [EMIT]     Run a specific pass on a given MLIR file."
+    echo "  test <folder|file.mlir>                    Run the lit test suite."
+    echo "  update-test-checks <file.mlir>             Update the FileCheck patterns in the given test file."
+    echo "  pipeline <file.mlir> [PASSES]              Print the pass pipeline with timing."
+    echo "  translate <file.mlir> [TARGET]             Translate MLIR to another representation (e.g., llvm-ir, llvm-bc)."
+    echo "  mlir-compile <file.mlir> [OUT] [OPT_LEVEL] Lower MLIR to LLVM IR and compile to an executable."
+    echo "  clean                                      Clean the build directory."
+    echo "  help                                       Show this help message."
+    echo ""
+    echo "Environment:"
+    echo "  LLVM_DIR    Path to LLVM build/install directory (default: ~/dev/llvm-project/llvm-build)"
+    echo ""
+    echo "Options:"
+    echo "  BUILD_TYPE  Build type for configuration (e.g., Debug, Release). Default is Release."
+    echo "  PASSES      Pass pipeline string (e.g., 'canonicalize,cse')."
+    echo "  EMIT        Type of output to emit: none, mlir, stdout. Default is stdout."
+    echo "  TARGET      Translation target: llvm-ir, llvm-bc. Default is llvm-ir."
+}
+
+# --- Main Script Logic ---
+
+# Show help message if no arguments are provided
+if [ $# -eq 0 ]; then
+    print_usage
+    exit 0
+fi
+
+COMMAND=$1
+shift # Remove the command from the arguments list
+
+case $COMMAND in
+    config)
+        BUILD_TYPE=${1:-Release}
+        echo "--- Configuring MLIR project ---"
+        mkdir -p ${BUILD_DIR}
+        LLVM_PATH_PREFIX=$(pwd)/llvm-build/bin
+        cmake -G Ninja -S llvm -B ${BUILD_DIR} \
+            -DLLVM_ENABLE_PROJECTS="mlir" \
+            -DLLVM_BUILD_EXAMPLES=ON \
+            -DLLVM_TARGETS_TO_BUILD="Native" \ #;NVPTX;AMDGPU
+            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+            -DLLVM_ENABLE_ASSERTIONS=ON \
+            -DCMAKE_C_COMPILER=${LLVM_PATH_PREFIX}/clang \
+            -DCMAKE_CXX_COMPILER=${LLVM_PATH_PREFIX}/clang++ \
+            -DCMAKE_LINKER=${LLVM_PATH_PREFIX}/lld \
+            -DLLVM_CCACHE_BUILD=ON \
+            -DMLIR_INCLUDE_INTEGRATION_TESTS=ON \
+            -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path)
+        ;;
+
+    build)
+        echo "--- Building project ---"
+        ninja -C ${BUILD_DIR}
+        ;;
+
+    rebuild)
+        echo "--- Rebuilding project from scratch ---"
+        rm -rf ${BUILD_DIR}
+        $0 config
+        $0 build
+        ;;
+
+    run-debug)
+        if [ -z "${1:-}" ]; then
+            echo "Error: Missing file argument for 'run-debug' command."
+            print_usage
+            exit 1
+        fi
+
+        INPUT_FILE=$1
+        PASSES=${2:-}
+        EMIT_TYPE=${3:-stdout} # none, mlir, stdout
+
+        PASS_FLAGS=""
+        if [ -n "$PASSES" ]; then
+            PASS_FLAGS="--pass-pipeline=builtin.module(${PASSES})"
+        fi
+
+        EMIT_FLAGS=""
+        case "$EMIT_TYPE" in
+            mlir)
+                EMIT_FLAGS="-o ${INPUT_FILE%.*}.opt.mlir"
+                ;;
+            stdout)
+                EMIT_FLAGS="-o -"
+                ;;
+            none)
+                EMIT_FLAGS="-o /dev/null"
+                ;;
+            *)
+                echo "Warning: Unknown emit type '$EMIT_TYPE'. Defaulting to stdout."
+                EMIT_FLAGS="-o -"
+                ;;
+        esac
+
+        echo "--- Running mlir-opt on ${INPUT_FILE} (Emit: ${EMIT_TYPE}) ---"
+
+        ${BUILD_DIR}/bin/mlir-opt \
+            ${PASS_FLAGS} \
+            --mlir-print-debuginfo \
+            --debug \
+            --mlir-timing \
+            ${EMIT_FLAGS} \
+            "${INPUT_FILE}"
+        ;;
+
+    run-pass)
+        if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
+            echo "Error: Missing arguments for 'run-pass' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        PASS_NAME=$2
+        EMIT_TYPE=${3:-none}
+
+        EMIT_FLAGS=""
+        case "$EMIT_TYPE" in
+            mlir)
+                EMIT_FLAGS="-o ${INPUT_FILE%.*}.${PASS_NAME}.mlir"
+                ;;
+            stdout)
+                EMIT_FLAGS="-o -"
+                ;;
+            none)
+                EMIT_FLAGS="-o /dev/null"
+                ;;
+            *)
+                echo "Warning: Unknown emit type '$EMIT_TYPE'. Defaulting to none."
+                EMIT_FLAGS="-o /dev/null"
+                ;;
+        esac
+
+        echo "--- Running pass ${PASS_NAME} on ${INPUT_FILE} (Emit: ${EMIT_TYPE}) ---"
+
+        ${BUILD_DIR}/bin/mlir-opt \
+            --pass-pipeline="builtin.module(${PASS_NAME})" \
+            --debug-only="${PASS_NAME}" \
+            --mlir-timing \
+            ${EMIT_FLAGS} \
+            "${INPUT_FILE}"
+        ;;
+
+    test)
+        if [ -z "${1:-}" ]; then
+            echo "Error: Missing path argument for 'test' command."
+            print_usage
+            exit 1
+        fi
+        echo "--- Running lit tests ---"
+        INPUT_FOLDER=$1
+        ${BUILD_DIR}/bin/llvm-lit -a -v "${INPUT_FOLDER}"
+        ;;
+
+    update-test-checks)
+        if [ -z "${1:-}" ]; then
+            echo "Error: Missing input file for 'update-test-checks' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        echo "--- Updating FileCheck patterns in ${INPUT_FILE} ---"
+        python3 mlir/utils/update_test_checks.py \
+            --opt-binary=${BUILD_DIR}/bin/mlir-opt \
+            ${INPUT_FILE}
+        ;;
+
+    pipeline)
+        if [ -z "${1:-}" ]; then
+            echo "Error: Missing file argument for 'pipeline' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        PASSES=${2:-canonicalize,cse}
+
+        echo "--- Printing pipeline for passes: ${PASSES} ---"
+        ${BUILD_DIR}/bin/mlir-opt \
+            --pass-pipeline="builtin.module(${PASSES})" \
+            --mlir-timing \
+            --mlir-print-ir-before-all \
+            --mlir-print-ir-after-all \
+            "${INPUT_FILE}" \
+            -o /dev/null
+        ;;
+
+    translate)
+        if [ -z "${1:-}" ]; then
+            echo "Error: Missing file argument for 'translate' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        TARGET=${2:-llvm-ir}
+
+        case "$TARGET" in
+            llvm-ir)
+                OUTPUT_FILE="${INPUT_FILE%.*}.ll"
+                echo "--- Translating ${INPUT_FILE} to LLVM IR ---"
+                ${BUILD_DIR}/bin/mlir-translate \
+                    --mlir-to-llvmir \
+                    "${INPUT_FILE}" \
+                    -o "${OUTPUT_FILE}"
+                echo "Output: ${OUTPUT_FILE}"
+                ;;
+            llvm-bc)
+                OUTPUT_FILE="${INPUT_FILE%.*}.bc"
+                echo "--- Translating ${INPUT_FILE} to LLVM Bitcode ---"
+                ${BUILD_DIR}/bin/mlir-translate \
+                    --mlir-to-llvmir \
+                    "${INPUT_FILE}" | \
+                ${LLVM_DIR}/bin/llvm-as \
+                    -o "${OUTPUT_FILE}"
+                echo "Output: ${OUTPUT_FILE}"
+                ;;
+            *)
+                echo "Error: Unknown translation target '$TARGET'."
+                echo "Supported targets: llvm-ir, llvm-bc"
+                exit 1
+                ;;
+        esac
+        ;;
+
+    mlir-compile)
+        if [ -z "${1:-}" ]; then
+            echo "Error: Missing input file for 'mlir-compile' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        OUT_NAME=${2:-${INPUT_FILE%.*}}
+        LLC_OPT=${3:--O0}
+        LL_FILE="${OUT_NAME}.ll"
+        OBJ_FILE="${OUT_NAME}.o"
+        SYSROOT=""
+        [[ "$OSTYPE" == "darwin"* ]] && SYSROOT="-isysroot $(xcrun --show-sdk-path)"
+
+        echo "--- Compiling ${INPUT_FILE} to executable ${OUT_NAME} (llc opts: ${LLC_OPT}) ---"
+
+        # Lower MLIR to LLVM IR
+        ${BUILD_DIR}/bin/mlir-translate \
+            --mlir-to-llvmir \
+            "${INPUT_FILE}" \
+            -o "${LL_FILE}"
+
+        # Compile LLVM IR to an object file
+        ${LLVM_DIR}/bin/llc ${LLC_OPT} -filetype=obj "${LL_FILE}" -o "${OBJ_FILE}"
+
+        # Link the object file to an executable
+        ${LLVM_DIR}/bin/clang "${OBJ_FILE}" -o "${OUT_NAME}" ${SYSROOT}
+
+        # Remove intermediate files
+        rm -f "${LL_FILE}" "${OBJ_FILE}"
+        ;;
+
+    clean)
+        echo "--- Cleaning build directory ---"
+        rm -rf ${BUILD_DIR}
+        ;;
+
+    help|*)
+        print_usage
+        ;;
+esac
+
+echo "--- Done ---"
