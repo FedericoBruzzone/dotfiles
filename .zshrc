@@ -266,6 +266,10 @@ function y() {
 }
 # }
 
+# nlgc bin path {
+# export PATH=$PATH:$HOME/thirdparty/nlg3/target/release/
+# }
+
 # local tgt configuration
 export LOCAL_TDLIB_PATH=$HOME/tdlib
 

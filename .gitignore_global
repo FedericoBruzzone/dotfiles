@@ -1,4 +1,6 @@
 .DS_store
 /build*
 /llvm-build*
+/mlir-build*
 /fcb*
+generated_parser
