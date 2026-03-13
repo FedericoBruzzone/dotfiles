@@ -26,6 +26,8 @@
     "editor.guides.bracketPairs": true,
     // Change font size with ctrl + mouse wheel
     "editor.mouseWheelZoom": true,
+    // Enable word wrap
+    "editor.wordWrap": "on",
     // Invert the primary and secondary sidebar, right and left respectively
     "workbench.sideBar.location": "left", // DEFAULT
     // Reveal the editor if it's already open
