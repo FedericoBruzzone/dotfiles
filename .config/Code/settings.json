@@ -1,0 +1,146 @@
+{
+    "editor.tabSize": 4,
+    // insert spaces when pressing Tab
+    "editor.insertSpaces": true,
+    // Auto indent
+    "editor.autoIndent": "full",
+    // whether to override tabSize based on a file's existing indent level
+    "editor.detectIndentation": true,
+    // Inline suggest is used to show code completion suggestions in the editor
+    "editor.inlineSuggest.enabled": true,
+    // Set font size
+    "editor.fontFamily": "", // DEFAULT: Monaco
+    // Relative line numbers
+    "editor.lineNumbers": "relative",
+    // Set font size
+    "editor.fontSize": 12,
+    // Set the line height 
+    "editor.lineHeight": 0, // DEFAULT
+    // Show trailing whitespace
+    "editor.renderWhitespace": "trailing",
+    // Don't show minimap
+    "editor.minimap.enabled": false,
+    // Automatically show the vertical bar
+    "editor.scrollbar.vertical": "auto", // DEFAULT
+    // Show indent guides lines color
+    "editor.guides.bracketPairs": true,
+    // Change font size with ctrl + mouse wheel
+    "editor.mouseWheelZoom": true,
+    // Invert the primary and secondary sidebar, right and left respectively
+    "workbench.sideBar.location": "left", // DEFAULT
+    // Reveal the editor if it's already open
+    "workbench.editor.revealIfOpen": false,
+    // Close empty groups
+    "workbench.editor.closeEmptyGroups": true, // DEFAULT
+    // Show only one fine in tab bar
+    "workbench.editor.showTabs": "multiple", // DEFAULT
+    // Show the activity bar at the top
+    "workbench.activityBar.location": "top",
+    // Remove the status bar
+    "workbench.statusBar.visible": true,
+    // TOPBAR: Remove layout controls
+    "workbench.layoutControl.enabled": true,
+    // TOPBAR: Remove editor actions
+    "workbench.editor.editorActionsLocation": "default", // DEFAULT
+    // Search mode not in the sidebar but in the editor
+    "search.mode": "reuseEditor",
+    // Enable auto save
+    "files.autoSave": "afterDelay",
+
+    // =============== Window ===============
+    // Custom title bar visibility
+    "window.customTitleBarVisibility": "auto",
+    // TOPBAR: Title bar with custom style (menu bar, command center, layout controls, chat controls -> all in one)
+    "window.titleBarStyle": "custom",
+    // TOPBAR: Don't show command center
+    "window.commandCenter": false,
+
+    // =============== Rust ===============
+    "rust-analyzer.rustc.source": "discover",
+    "rust-analyzer.runnables.extraEnv": {
+        "PATH": "${env:HOME}/.cargo/bin"
+    },
+    // "rust-analyzer.checkOnSave": false,
+
+    // =============== Vim ===============
+    // Set leader key to space
+    "vim.leader": "<space>",
+    // Highlight search results
+    "vim.hlsearch": true,
+    // Don't use ctrl keys of vscode
+    "vim.useCtrlKeys": true,
+    "vim.normalModeKeyBindings": [
+        // Go to the next diagnostic
+        { "before": [ "]", "d" ], "commands": [ "editor.action.marker.nextInFiles" ] },
+        // Go to the previous diagnostic
+        { "before": [ "[", "d" ], "commands": [ "editor.action.marker.prevInFiles" ] },
+        // Open goto file
+        { "before": [ "<C-p>" ], "commands": [ "workbench.action.quickOpen" ] },
+        // Toggle sidebar visibility
+        { "before": [ "<C-b>" ], "commands": [ "workbench.action.toggleSidebarVisibility" ], },
+        // Toggle pannel visibility
+        { "before": [ "<C-j>" ], "commands": [ "workbench.action.togglePanel" ] },
+        // Find
+        { "before": [ "<C-f>" ], "commands": [ "actions.find" ] },
+        // Remove search highlight
+        { "before": [ "<Esc>", "u" ], "commands": [ ":nohl" ] },
+        // Split editor right
+        { "before": [ "<C-w>", "v" ], "commands": [ "workbench.action.splitEditorRight" ] },
+        // Split editor down
+        { "before": [ "<C-w>", "n" ], "commands": [ "workbench.action.splitEditorDown" ] },
+        // Paste from clipboard
+        { "before": [ "<leader>", "p" ], "after": [ "\"", "+", "p" ] },
+        // Paste at the end of the line
+        { "before": [ "<leader>", "p", "e" ], "after": [ "A", " ", "<Esc>", "p" ] },
+        // Close all windows in the focused editor group
+        { "before": [ ":", "Q" ], "commands": [ "workbench.action.closeEditorsInGroup" ] },
+        // Go to references
+        { "before": [ "g", "r" ], "commands": [ "editor.action.referenceSearch.trigger" ] },
+    ],
+    "vim.visualModeKeyBindings": [
+        // Move line up
+        { "before": [ "K" ], "commands": [ "editor.action.moveLinesUpAction" ] },
+        // Move line down
+        { "before": [ "J" ], "commands": [ "editor.action.moveLinesDownAction" ] },
+        // Copy to clipboard
+        { "before": [ "<leader>", "y" ], "after": [ "\"", "+", "y" ] },
+        // Paste from clipboard
+        { "before": [ "<leader>", "p" ], "after": [ "\"", "+", "p" ] },
+        // Delete without copying to clipboard
+        { "before": [ "<leader>", "d" ], "after": [ "\"", "_", "d" ] },
+    ],
+    // =============== Performance ===============
+    // To improve performance
+    "extensions.experimental.affinity": {
+        "vscodevim.vim": 1
+    },
+
+    // =============== Copilot ===============
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": true,
+        "markdown": true,
+        "scminput": false,
+        "coq": false
+    },
+    "github.copilot.nextEditSuggestions.enabled": true,
+
+    // =============== Coq ===============
+    "vscoq.path": "/home/fcb/.opam/slf/bin/vscoqtop",
+    "vscoq-language-server.trace.server": "verbose",
+    "vscoq.diagnostics.full": true,
+    "vscoq.goals.messages.full": true,
+
+    // =============== Typst ===============
+    "[typst]": {
+        "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?"
+    },
+    "[typst-code]": {
+        "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?"
+    },
+    "workbench.colorTheme": "Experimental Dark",
+    "editor.inlayHints.enabled": "on",
+    "gitlens.ai.model": "vscode",
+    "gitlens.ai.vscode.model": "copilot:gpt-4.1",
+    "gitlens.hovers.currentLine.over": "line",
+}
