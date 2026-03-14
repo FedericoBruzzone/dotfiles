@@ -1,6 +1,4 @@
 " Vim syntax file
-" Language: Gaetano D'Agostino
-"
 if exists("b:current_syntax")
   finish
 endif

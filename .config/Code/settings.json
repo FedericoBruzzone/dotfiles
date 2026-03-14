@@ -9,7 +9,7 @@
     // Inline suggest is used to show code completion suggestions in the editor
     "editor.inlineSuggest.enabled": true,
     // Set font size
-    "editor.fontFamily": "", // DEFAULT: Monaco
+    "editor.fontFamily": "Menlo", // DEFAULT 
     // Relative line numbers
     "editor.lineNumbers": "relative",
     // Set font size
@@ -140,7 +140,7 @@
     "[typst-code]": {
         "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?"
     },
-    "workbench.colorTheme": "Experimental Dark",
+    "workbench.colorTheme": "Experimental Light",
     "editor.inlayHints.enabled": "on",
     "gitlens.ai.model": "vscode",
     "gitlens.ai.vscode.model": "copilot:gpt-4.1",
