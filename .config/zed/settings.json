@@ -8,8 +8,8 @@
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
   "theme": {
-    "mode": "dark",
-    "light": "Kanagawa Lotus",
+    "mode": "light",
+    "light": "One Light",
     "dark": "Kanagawa Dragon",
   },
   // AI
@@ -27,9 +27,9 @@
   "agent": {
     "default_model": {
       "effort": "high",
-      "enable_thinking": true,
-      "provider": "zed.dev",
-      "model": "claude-sonnet-4-6",
+      "enable_thinking": false,
+      "provider": "copilot_chat",
+      "model": "gpt-5.2-codex",
     },
     "inline_assistant_model": {
       "provider": "copilot_chat",

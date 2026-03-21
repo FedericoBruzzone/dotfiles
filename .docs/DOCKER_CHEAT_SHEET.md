@@ -15,6 +15,12 @@ colima stop
 colima restart
 ```
 
+or
+
+```
+brew services start colima
+```
+
 ## Start Docker
 
 ```bash

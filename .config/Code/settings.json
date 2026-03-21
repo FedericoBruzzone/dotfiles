@@ -145,4 +145,5 @@
     "gitlens.ai.model": "vscode",
     "gitlens.ai.vscode.model": "copilot:gpt-4.1",
     "gitlens.hovers.currentLine.over": "line",
+    "tinymist.preview.refresh": "onSave",
 }
