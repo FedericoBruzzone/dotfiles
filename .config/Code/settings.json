@@ -12,8 +12,6 @@
     "editor.fontFamily": "Menlo", // DEFAULT 
     // Relative line numbers
     "editor.lineNumbers": "relative",
-    // Set font size
-    "editor.fontSize": 12,
     // Set the line height 
     "editor.lineHeight": 0, // DEFAULT
     // Show trailing whitespace
@@ -28,6 +26,8 @@
     "editor.mouseWheelZoom": true,
     // Enable word wrap
     "editor.wordWrap": "on",
+    // Font size
+    "editor.fontSize": 14,
     // Invert the primary and secondary sidebar, right and left respectively
     "workbench.sideBar.location": "left", // DEFAULT
     // Reveal the editor if it's already open
@@ -56,6 +56,8 @@
     "window.titleBarStyle": "custom",
     // TOPBAR: Don't show command center
     "window.commandCenter": false,
+    // Zoom level
+    "window.zoomLevel": 1,
 
     // =============== Rust ===============
     "rust-analyzer.rustc.source": "discover",
@@ -140,10 +142,11 @@
     "[typst-code]": {
         "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?"
     },
-    "workbench.colorTheme": "Experimental Light",
     "editor.inlayHints.enabled": "on",
     "gitlens.ai.model": "vscode",
     "gitlens.ai.vscode.model": "copilot:gpt-4.1",
     "gitlens.hovers.currentLine.over": "line",
     "tinymist.preview.refresh": "onSave",
+    "csv.enabled": true,
+    "workbench.colorTheme": "VS Code Light",
 }

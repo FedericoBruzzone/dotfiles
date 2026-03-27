@@ -81,7 +81,7 @@ return {
                 light = "lotus"
             },
         })
-        vim.cmd("colorscheme kanagawa-dragon")
+        -- vim.cmd("colorscheme kanagawa-dragon")
         -- vim.api.nvim_set_hl(0, "Normal", { bg = "Black" })
         -- vim.api.nvim_set_hl(0, "SignColumn", { bg = "Black" })
 
@@ -89,5 +89,10 @@ return {
         vim.api.nvim_set_keymap('n', '<leader>co2', ":colorscheme kanagawa-wave<CR>", { noremap = true, silent = true })
         vim.api.nvim_set_keymap('n', '<leader>co1', ":colorscheme kanagawa-dragon<CR>", { noremap = true, silent = true })
         vim.api.nvim_set_keymap('n', '<leader>co3', ":colorscheme kanagawa-lotus<CR>", { noremap = true, silent = true })
+
+
+
+        vim.cmd("colorscheme default")
+        vim.cmd("set background=light") -- or "dark" for dark mode
     end
 }

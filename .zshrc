@@ -270,6 +270,10 @@ function y() {
 # export PATH=$PATH:$HOME/thirdparty/nlg3/target/release/
 # }
 
+# valging bin path {
+export PATH=$HOME/valgrind-install/bin:$PATH
+# }
+
 # local tgt configuration
 export LOCAL_TDLIB_PATH=$HOME/tdlib
 
