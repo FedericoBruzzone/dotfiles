@@ -93,6 +93,6 @@ return {
 
 
         vim.cmd("colorscheme default")
-        vim.cmd("set background=light") -- or "dark" for dark mode
+        vim.cmd("set background=dark") -- or "light" for dark mode
     end
 }

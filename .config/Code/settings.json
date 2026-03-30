@@ -148,5 +148,4 @@
     "gitlens.hovers.currentLine.over": "line",
     "tinymist.preview.refresh": "onSave",
     "csv.enabled": true,
-    "workbench.colorTheme": "VS Code Light",
 }
