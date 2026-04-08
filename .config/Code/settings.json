@@ -24,8 +24,6 @@
     "editor.guides.bracketPairs": true,
     // Change font size with ctrl + mouse wheel
     "editor.mouseWheelZoom": true,
-    // Enable word wrap
-    "editor.wordWrap": "on",
     // Font size
     "editor.fontSize": 14,
     // Invert the primary and secondary sidebar, right and left respectively
@@ -148,6 +146,6 @@
     "gitlens.hovers.currentLine.over": "line",
     "tinymist.preview.refresh": "onSave",
     "csv.enabled": true,
-    "workbench.colorTheme": "Light 2026",
     "editor.largeFileOptimizations": false,
+    "editor.wordWrap": "on",
 }
