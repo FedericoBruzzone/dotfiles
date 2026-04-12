@@ -148,4 +148,5 @@
     "csv.enabled": true,
     "editor.largeFileOptimizations": false,
     "editor.wordWrap": "on",
+    "workbench.colorTheme": "Light 2026",
 }
