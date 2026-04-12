@@ -30,6 +30,7 @@
     tool = nvimdiff
 [init]
 	defaultBranch = main
+	templateDir = ~/.git_template
 
 ; remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
 ; [remote "origin"]

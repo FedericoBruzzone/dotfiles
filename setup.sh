@@ -23,6 +23,7 @@ ITEMS=(
   ".config/nvim"
   ".config/ghostty"
   ".config/zed"
+  ".git_template"
   "unimi.ovpn"
 )
 
