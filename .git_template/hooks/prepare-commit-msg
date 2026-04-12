@@ -6,7 +6,13 @@ EMAIL="federico.bruzzone.i@gmail.com"
 SOB="Signed-off-by: $NAME <$EMAIL>"
 AB="Assisted-by: GitHub-Copilot:auto"
 
-# Add the "Signed-off-by" and "Assisted-by" lines to the commit message if they are not already present
-# The \n ensures there is an empty line before the signature
-grep -q "$SOB" "$1" || echo "\n$SOB" >> "$1"
-grep -q "$AB" "$1" || echo "$AB" >> "$1"
+# Add both signature lines only when the commit message is missing Signed-off-by
+if ! grep -qF "$SOB" "$1"; then
+  printf "\n%s\n" "$SOB" >> "$1"
+  grep -qF "$AB" "$1" || echo "$AB" >> "$1"
+fi
+
+# # Add the "Signed-off-by" and "Assisted-by" lines to the commit message if they are not already present
+# # The \n ensures there is an empty line before the signature
+# grep -q "$SOB" "$1" || echo "\n$SOB" >> "$1"
+# grep -q "$AB" "$1" || echo "$AB" >> "$1"
