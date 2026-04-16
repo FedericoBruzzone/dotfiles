@@ -24,6 +24,7 @@ ITEMS=(
   ".config/ghostty"
   ".config/zed"
   ".git_template"
+  ".ssh"
   "unimi.ovpn"
 )
 
