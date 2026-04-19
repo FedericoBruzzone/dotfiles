@@ -1,116 +1,79 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+autoload -Uz compinit && compinit
+autoload -Uz vcs_info
 
-# Path to your Oh My Zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
+precmd_vcs_info() { vcs_info }
+precmd_functions+=( precmd_vcs_info )
+setopt prompt_subst
+RPROMPT='${vcs_info_msg_0_}'
+# # PROMPT='${vcs_info_msg_0_}%# '
+# zstyle ':vcs_info:git:*' formats '%b'
 
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time Oh My Zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="robbyrussell"
+zstyle ':vcs_info:git*:*' check-for-changes true
+zstyle ':vcs_info:git*:*' unstagedstr '|U'
+zstyle ':vcs_info:git*:*' stagedstr '|≠'
 
-# Set list of themes to pick from when loading at random
-# Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in $ZSH/themes/
-# If set to an empty array, this variable will have no effect.
-# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+# enable hooks, requires Zsh >=4.3.11
+if [[ $ZSH_VERSION == 4.3.<11->* || $ZSH_VERSION == 4.<4->* || $ZSH_VERSION == <5->* ]] ; then
+  # hook for untracked files
+  +vi-untracked() {
+    if [[ $(git rev-parse --is-inside-work-tree 2>/dev/null) == 'true'  ]] && \
+       [[ -n $(git ls-files --others --exclude-standard) ]] ; then
+       hook_com[staged]+='|☂'
+    fi
+  }
 
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
+  # unpushed commits
+  +vi-outgoing() {
+    local gitdir="$(git rev-parse --git-dir 2>/dev/null)"
+    [ -n "$gitdir" ] || return 0
 
-# Uncomment the following line to use hyphen-insensitive completion.
-# Case-sensitive completion must be off. _ and - will be interchangeable.
-# HYPHEN_INSENSITIVE="true"
+    if [ -r "${gitdir}/refs/remotes/git-svn" ] ; then
+      local count=$(git rev-list remotes/git-svn.. 2>/dev/null | wc -l)
+    else
+      local branch="$(cat ${gitdir}/HEAD 2>/dev/null)"
+      branch=${branch##*/heads/}
+      local count=$(git rev-list remotes/origin/${branch}.. 2>/dev/null | wc -l | tr -d ' ')
+    fi
 
-# Uncomment one of the following lines to change the auto-update behavior
-# zstyle ':omz:update' mode disabled  # disable automatic updates
-# zstyle ':omz:update' mode auto      # update automatically without asking
-# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
+    if [[ "$count" -gt 0 ]] ; then
+      hook_com[staged]+="|↑$count"
+    fi
+  }
 
-# Uncomment the following line to change how often to auto-update (in days).
-# zstyle ':omz:update' frequency 13
+  # hook for stashed files
+  +vi-stashed() {
+    if git rev-parse --verify refs/stash &>/dev/null ; then
+      hook_com[staged]+='|s'
+    fi
+  }
 
-# Uncomment the following line if pasting URLs and other text is messed up.
-# DISABLE_MAGIC_FUNCTIONS="true"
+  zstyle ':vcs_info:git*+set-message:*' hooks stashed untracked outgoing
+fi
 
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
+# extend default vcs_info in prompt
+zstyle ':vcs_info:*' actionformats "(%s)-[%b|%a%u%c] " "zsh: %r"
+zstyle ':vcs_info:*' formats       "(%s)-[%b%u%c]%} " "zsh: %r"
 
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
+# Prompt
+# PS1="%n@%m:%~$ "
+PS1="%F{6}%~%f$ "
+# PS2="%_> "#
 
-# Uncomment the following line to enable command auto-correction.
-# ENABLE_CORRECTION="true"
+# zsh completition
+# Check if macOS x86_64
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+    else
+        source /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+    fi
+fi
 
-# Uncomment the following line to display red dots whilst waiting for completion.
-# You can also set it to another string to have that shown instead of the default red dots.
-# e.g. COMPLETION_WAITING_DOTS="%F{yellow}waiting...%f"
-# Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
-# COMPLETION_WAITING_DOTS="true"
-
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
-
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# You can set one of the optional three formats:
-# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# or set a custom format using the strftime function format specifications,
-# see 'man strftime' for details.
-# HIST_STAMPS="mm/dd/yyyy"
-
-# Would you like to use another custom folder than $ZSH/custom?
-# ZSH_CUSTOM=/path/to/new-custom-folder
-
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-plugins=(git zsh-autosuggestions)
-
-source $ZSH/oh-my-zsh.sh
-
-# User configuration
-
-# export MANPATH="/usr/local/man:$MANPATH"
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
-# Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='nvim'
-# fi
-
-# Compilation flags
-# export ARCHFLAGS="-arch $(uname -m)"
-
-# Set personal aliases, overriding those provided by Oh My Zsh libs,
-# plugins, and themes. Aliases can be placed here, though Oh My Zsh
-# users are encouraged to define aliases within a top-level file in
-# the $ZSH_CUSTOM folder, with .zsh extension. Examples:
-# - $ZSH_CUSTOM/aliases.zsh
-# - $ZSH_CUSTOM/macos.zsh
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-
-
-#################################################
-#################################################
-#################################################
-
-
-# sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-# git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+# zsh history
+HISTFILE=~/.zsh_history
+HISTSIZE=999999999
+SAVEHIST=$HISTSIZE
+export EDITOR=nvim
 
 # Homebrew configuration {
     export PATH="/usr/local/sbin:$PATH"
@@ -329,6 +292,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 # }
 
+
+
+
+
+
 # koka configuration {
  export PATH=$PATH:$HOME/.local/bin
 # }
@@ -360,6 +328,15 @@ export API_HASH="a3406de8d171bb422bb6ddf3bbd800e2"
 
 # Gemini
 export GEMINI_API_KEY="AIzaSyA3Q1Cpp9l9aHC-ul2DobK5yhlSaM3Sb9Y"
+
+autoload -Uz colors && colors
+export CLICOLOR=1
+alias ls='ls -G' # -G enables colorized output on macOS
+alias grep='grep --color=auto'
+alias ll='ls -alF'
+alias la='ls -A'
+alias ..='cd ..'
+alias g='git'
 
 # Function to convert SVG to PDF using rsvg-convert
 svg-convert () {
