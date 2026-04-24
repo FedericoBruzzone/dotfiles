@@ -5,6 +5,7 @@ unset LDFLAGS
 unset CPPFLAGS
 
 LLVM_PREFIX_PATH=${LLVM_PREFIX_PATH:-/opt/homebrew/opt/llvm@22}
+CMAKE_PREFIX_PATH=${LLVM_PREFIX_PATH}
 export PATH="${LLVM_PREFIX_PATH}/bin:$PATH" # export to ensure subprocesses can use the same LLVM tools
 LIT_COMMAND=lit
 BUILD_DIR=./build
@@ -27,6 +28,7 @@ print_usage() {
     echo "  clang-format [CLANG_FORMAT_COMMIT]   Format staged changed files compared to a git commit using clang-format."
     echo "  clang-tidy [CLANG_TIDY_COMMIT]       Run clang-tidy on staged changed files compared to a git commit."
     echo "  create-clangd                        Create a .clangd configuration file for the project."
+    echo "  show-config                          Show the current configuration and environment variables."
     echo "  clean                                Clean the build directory."
     echo "  help                                 Show this help message."
     echo ""
@@ -53,6 +55,8 @@ if [ $# -eq 0 ]; then
     exit 0
 fi
 
+
+
 COMMAND=$1
 shift # Remove the command from the arguments list
 
@@ -64,7 +68,7 @@ case $COMMAND in
         mkdir -p ${BUILD_DIR}
         cmake -G Ninja -S . -B ${BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-            -DCMAKE_PREFIX_PATH=${LLVM_PREFIX_PATH} \
+            -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH} \
             -DCMAKE_C_COMPILER=${LLVM_PREFIX_PATH}/bin/clang \
             -DCMAKE_CXX_COMPILER=${LLVM_PREFIX_PATH}/bin/clang++ \
             -DLLVM_ENABLE_ASSERTIONS=ON
@@ -139,6 +143,20 @@ CompileFlags:
   CompilationDatabase: ${BUILD_DIR}/
 EOL
         echo "[eter-helper] .clangd file created with compilation database path: ${BUILD_DIR}/"
+        ;;
+
+    show-config)
+        echo "[eter-helper] Starting with the following configuration:"
+        echo "[eter-helper] PATH: ${PATH}"
+        echo "[eter-helper] CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH:-<not set>}"
+        echo "[eter-helper] LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-<not set>}"
+        echo "[eter-helper] LDFLAGS: ${LDFLAGS:-<not set>}"
+        echo "[eter-helper] CPPFLAGS: ${CPPFLAGS:-<not set>}"
+        echo "[eter-helper] LLVM_PREFIX_PATH: ${LLVM_PREFIX_PATH}"
+        echo "[eter-helper] LIT_COMMAND: ${LIT_COMMAND}"
+        echo "[eter-helper] BUILD_DIR: ${BUILD_DIR}"
+        echo "[eter-helper] CLANG_FORMAT_COMMIT: ${CLANG_FORMAT_COMMIT}"
+        echo "[eter-helper] CLANG_TIDY_COMMIT: ${CLANG_TIDY_COMMIT}"
         ;;
 
     clean)
