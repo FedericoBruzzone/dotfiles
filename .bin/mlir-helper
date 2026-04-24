@@ -177,7 +177,7 @@ case $COMMAND in
         fi
         INPUT_FILE=$1
         echo "--- Updating FileCheck patterns in ${INPUT_FILE} ---"
-        python3 mlir/utils/update_test_checks.py \
+        python3 llvm/utils/update_test_checks.py \
             --opt-binary=${BUILD_DIR}/bin/mlir-opt \
             ${INPUT_FILE}
         ;;

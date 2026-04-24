@@ -289,7 +289,47 @@ fi
 # fi
 # }
 
-# llvm@22 (latest) configuration {
+# llvm@22 configuration {
+# if [[ "$OSTYPE" == "darwin"* ]]; then
+#  if [[ "$(uname -m)" == "arm64" ]]; then
+#   # Using `clang`, `clang++`, etc., requires a CLT installation at `/Library/Developer/CommandLineTools`.
+#   # If you don't want to install the CLT, you can write appropriate configuration files pointing to your
+#   # SDK at ~/.config/clang.
+#   #
+#   # To use the bundled libunwind please use the following LDFLAGS:
+#   #   LDFLAGS="-L/opt/homebrew/opt/llvm@22/lib/unwind -lunwind"
+#   #
+#   # To use the bundled libc++ please use the following LDFLAGS:
+#   #   LDFLAGS="-L/opt/homebrew/opt/llvm@22/lib/c++ -L/opt/homebrew/opt/llvm@22/lib/unwind -lunwind"
+#   #
+#   # NOTE: You probably want to use the libunwind and libc++ provided by macOS unless you know what you're doing.
+#   #
+#   # llvm is keg-only, which means it was not symlinked into /opt/homebrew,
+#   # because this is an alternate version of another formula.
+#   #
+#   # If you need to have llvm first in your PATH, run:
+#   #   echo 'export PATH="/opt/homebrew/opt/llvm@22/bin:$PATH"' >> ~/.zshrc
+#   #
+#   # For compilers to find llvm you may need to set:
+#   #   export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+#   #   export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+#   #
+#   # For cmake to find llvm you may need to set:
+#   #   export CMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm"
+#   export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+#   export LDFLAGS="-L/opt/homebrew/opt/llvm@22/lib/unwind -lunwind"
+#   export LDFLAGS="-L/opt/homebrew/opt/llvm@22/libc++ -L/opt/homebrew/opt/llvm@22/lib $LDFLAGS"
+#   export CPPFLAGS="-I/opt/homebrew/opt/llvm@22/include"
+#  else
+#   export PATH="/usr/local/opt/llvm@22/bin:$PATH"
+#   export LDFLAGS="-L/usr/local/opt/llvm@22/lib/unwind -lunwind"
+#   export LDFLAGS="-L/usr/local/opt/llvm@22/lib/c++ -L/usr/local/opt/llvm@22/lib $LDFLAGS"
+#   export CPPFLAGS="-I/usr/local/opt/llvm@22/include"
+#  fi
+# fi
+# }
+
+# llvm latest configuration {
 if [[ "$OSTYPE" == "darwin"* ]]; then
  if [[ "$(uname -m)" == "arm64" ]]; then
   # Using `clang`, `clang++`, etc., requires a CLT installation at `/Library/Developer/CommandLineTools`.
@@ -329,6 +369,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 # }
 
+
+
 # koka configuration {
  export PATH=$PATH:$HOME/.local/bin
 # }
@@ -357,9 +399,6 @@ export LOCAL_TDLIB_PATH=$HOME/tdlib
 # tdlib-rs configuration (for test purposes)
 export API_ID="94575"
 export API_HASH="a3406de8d171bb422bb6ddf3bbd800e2"
-
-# Gemini
-export GEMINI_API_KEY="AIzaSyA3Q1Cpp9l9aHC-ul2DobK5yhlSaM3Sb9Y"
 
 # Function to convert SVG to PDF using rsvg-convert
 svg-convert () {
