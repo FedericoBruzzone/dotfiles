@@ -13,7 +13,7 @@
     // Relative line numbers
     "editor.lineNumbers": "relative",
     // Set the line height 
-    "editor.lineHeight": 0, // DEFAULT
+    "editor.lineHeight": 24, // Default is 0
     // Show trailing whitespace
     "editor.renderWhitespace": "trailing",
     // Don't show minimap
@@ -37,7 +37,7 @@
     // Show the activity bar at the top
     "workbench.activityBar.location": "top",
     // Remove the status bar
-    "workbench.statusBar.visible": true,
+    "workbench.statusBar.visible": false,
     // TOPBAR: Remove layout controls
     "workbench.layoutControl.enabled": true,
     // TOPBAR: Remove editor actions
@@ -141,12 +141,10 @@
         "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?"
     },
     "editor.inlayHints.enabled": "on",
-    "gitlens.ai.model": "vscode",
-    "gitlens.ai.vscode.model": "copilot:gpt-4.1",
     "gitlens.hovers.currentLine.over": "line",
     "tinymist.preview.refresh": "onSave",
-    "csv.enabled": true,
     "editor.largeFileOptimizations": false,
     "editor.wordWrap": "on",
     "claudeCode.preferredLocation": "panel",
+    "workbench.colorTheme": "Light 2026"
 }

@@ -52,5 +52,6 @@ rsync -av --exclude 'slr/TOP-VENUES/dblp-2025-06-01.xml' ./slr bruzzone@gungnir.
 `scp` files from the gungnir server:
 
 ```bash
-scp bruzzone@gungnir.adapt.di.unimi.it:/home/bruzzone/file ./path
+scp bruzzone@gungnir.adapt.di.unimi.it:/home/bruzzone/file ./path/
+scp -r 'bruzzone@gungnir.adapt.di.unimi.it:/home/bruzzone/*.log' ./path/
 ```

@@ -28,3 +28,8 @@ tags
 .config/zed/prompts
 .config/zed/themes
 .config/zed/conversations
+.agents/backups/
+.agents/file-history/
+.agents/ide/
+.agents/projects/
+.agents/sessions/
