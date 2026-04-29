@@ -27,6 +27,8 @@ print_usage() {
     echo "  check-clang-format [COMMIT]          Run clang-format on staged changed files compared to a git commit."
     echo "  clang-format [CLANG_FORMAT_COMMIT]   Format staged changed files compared to a git commit using clang-format."
     echo "  clang-tidy [CLANG_TIDY_COMMIT]       Run clang-tidy on staged changed files compared to a git commit."
+    echo "  check-commit-clang-format [COMMIT]   Check if a specific commit is clang-format correct (default: HEAD)."
+    echo "  check-commit-clang-tidy [COMMIT]     Check if a specific commit is clang-tidy correct (default: HEAD)."
     echo "  create-clangd                        Create a .clangd configuration file for the project."
     echo "  show-config                          Show the current configuration and environment variables."
     echo "  clean                                Clean the build directory."
@@ -135,6 +137,27 @@ case $COMMAND in
         # Run clang-tidy on the changed files
         clang-tidy $CHANGED_FILES -p ${BUILD_DIR} --header-filter='.*'
         ;;  
+
+    check-commit-clang-format)
+        COMMIT=${1:-HEAD}
+        echo "[eter-helper] Checking clang-format of commit ${COMMIT}"
+        git clang-format --diff "${COMMIT}~1" "${COMMIT}"
+        ;;
+
+    check-commit-clang-tidy)
+        COMMIT=${1:-HEAD}
+        echo "[eter-helper] Checking clang-tidy of commit ${COMMIT}"
+        # Get the list of files changed in the specific commit
+        CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r "${COMMIT}" --diff-filter=ACMR | grep -E '\.(c|cc|cpp|cxx)$' || true)
+        if [ -z "$CHANGED_FILES" ]; then
+            echo "[eter-helper] No C/C++ files changed in ${COMMIT}. Skipping clang-tidy."
+            exit 0
+        fi
+        echo "[eter-helper] Running clang-tidy on the following files (current version):"
+        echo "$CHANGED_FILES"
+        # Run clang-tidy on the files (uses current working directory versions)
+        clang-tidy $CHANGED_FILES -p ${BUILD_DIR} --header-filter='.*'
+        ;;
 
     create-clangd)
         echo "[eter-helper] Creating .clangd configuration file"
