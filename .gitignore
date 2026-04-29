@@ -33,3 +33,5 @@ tags
 .agents/ide/
 .agents/projects/
 .agents/sessions/
+.agents/plans/
+.agents/shell-snapshots/
