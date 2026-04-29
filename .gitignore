@@ -35,3 +35,5 @@ tags
 .agents/sessions/
 .agents/plans/
 .agents/shell-snapshots/
+.agents/cache/
+.agents/history.jsonl
