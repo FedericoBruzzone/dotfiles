@@ -329,45 +329,45 @@ fi
 # fi
 # }
 
-# llvm latest configuration {
-if [[ "$OSTYPE" == "darwin"* ]]; then
- if [[ "$(uname -m)" == "arm64" ]]; then
-  # Using `clang`, `clang++`, etc., requires a CLT installation at `/Library/Developer/CommandLineTools`.
-  # If you don't want to install the CLT, you can write appropriate configuration files pointing to your
-  # SDK at ~/.config/clang.
-  #
-  # To use the bundled libunwind please use the following LDFLAGS:
-  #   LDFLAGS="-L/opt/homebrew/opt/llvm/lib/unwind -lunwind"
-  #
-  # To use the bundled libc++ please use the following LDFLAGS:
-  #   LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib/unwind -lunwind"
-  #
-  # NOTE: You probably want to use the libunwind and libc++ provided by macOS unless you know what you're doing.
-  #
-  # llvm is keg-only, which means it was not symlinked into /opt/homebrew,
-  # because this is an alternate version of another formula.
-  #
-  # If you need to have llvm first in your PATH, run:
-  #   echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.zshrc
-  #
-  # For compilers to find llvm you may need to set:
-  #   export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
-  #   export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
-  #
-  # For cmake to find llvm you may need to set:
-  #   export CMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm"
-  export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-  export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/unwind -lunwind"
-  export LDFLAGS="-L/opt/homebrew/opt/llvm/libc++ -L/opt/homebrew/opt/llvm/lib $LDFLAGS"
-  export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
- else
-  export PATH="/usr/local/opt/llvm/bin:$PATH"
-  export LDFLAGS="-L/usr/local/opt/llvm/lib/unwind -lunwind"
-  export LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -L/usr/local/opt/llvm/lib $LDFLAGS"
-  export CPPFLAGS="-I/usr/local/opt/llvm/include"
- fi
-fi
-# }
+# # llvm latest configuration {
+# if [[ "$OSTYPE" == "darwin"* ]]; then
+#  if [[ "$(uname -m)" == "arm64" ]]; then
+#   # Using `clang`, `clang++`, etc., requires a CLT installation at `/Library/Developer/CommandLineTools`.
+#   # If you don't want to install the CLT, you can write appropriate configuration files pointing to your
+#   # SDK at ~/.config/clang.
+#   #
+#   # To use the bundled libunwind please use the following LDFLAGS:
+#   #   LDFLAGS="-L/opt/homebrew/opt/llvm/lib/unwind -lunwind"
+#   #
+#   # To use the bundled libc++ please use the following LDFLAGS:
+#   #   LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib/unwind -lunwind"
+#   #
+#   # NOTE: You probably want to use the libunwind and libc++ provided by macOS unless you know what you're doing.
+#   #
+#   # llvm is keg-only, which means it was not symlinked into /opt/homebrew,
+#   # because this is an alternate version of another formula.
+#   #
+#   # If you need to have llvm first in your PATH, run:
+#   #   echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.zshrc
+#   #
+#   # For compilers to find llvm you may need to set:
+#   #   export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+#   #   export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+#   #
+#   # For cmake to find llvm you may need to set:
+#   #   export CMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm"
+#   export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+#   export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/unwind -lunwind"
+#   export LDFLAGS="-L/opt/homebrew/opt/llvm/libc++ -L/opt/homebrew/opt/llvm/lib $LDFLAGS"
+#   export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+#  else
+#   export PATH="/usr/local/opt/llvm/bin:$PATH"
+#   export LDFLAGS="-L/usr/local/opt/llvm/lib/unwind -lunwind"
+#   export LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -L/usr/local/opt/llvm/lib $LDFLAGS"
+#   export CPPFLAGS="-I/usr/local/opt/llvm/include"
+#  fi
+# fi
+# # }
 
 
 
