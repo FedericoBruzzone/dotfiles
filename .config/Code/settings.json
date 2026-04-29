@@ -146,7 +146,8 @@
     "editor.largeFileOptimizations": false,
     "editor.wordWrap": "on",
     "claudeCode.preferredLocation": "panel",
-    "workbench.colorTheme": "Quiet Light",
     "gitlens.ai.model": "vscode",
-    "gitlens.ai.vscode.model": "copilot:gpt-4.1"
+    "gitlens.ai.vscode.model": "copilot:gpt-4.1",
+    "claudeCode.allowDangerouslySkipPermissions": true,
+    "githubPullRequests.pullBranch": "never"
 }
