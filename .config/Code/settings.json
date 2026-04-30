@@ -149,5 +149,7 @@
     "gitlens.ai.model": "vscode",
     "gitlens.ai.vscode.model": "copilot:gpt-4.1",
     "claudeCode.allowDangerouslySkipPermissions": true,
-    "githubPullRequests.pullBranch": "never"
+    "githubPullRequests.pullBranch": "never",
+    "cmake.configureOnEdit": false,
+    "cmake.configureOnOpen": false
 }

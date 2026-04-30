@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Delete a branch locally and remotely
+git branch -d "$1"
+git push origin --delete "$1"
