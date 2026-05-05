@@ -35,7 +35,7 @@
     // Show only one fine in tab bar
     "workbench.editor.showTabs": "multiple", // DEFAULT
     // Show the activity bar at the top
-    "workbench.activityBar.location": "top",
+    "workbench.activityBar.location": "default", // DEFAULT
     // Remove the status bar
     "workbench.statusBar.visible": false,
     // TOPBAR: Remove layout controls
