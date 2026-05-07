@@ -9,11 +9,11 @@
     // Inline suggest is used to show code completion suggestions in the editor
     "editor.inlineSuggest.enabled": true,
     // Set font size
-    "editor.fontFamily": "Menlo", // DEFAULT 
+    "editor.fontFamily": "Monaco", // DEFAULT: Menlo
     // Relative line numbers
     "editor.lineNumbers": "relative",
     // Set the line height 
-    "editor.lineHeight": 24, // Default is 0
+    "editor.lineHeight": 26, // Default is 0
     // Show trailing whitespace
     "editor.renderWhitespace": "trailing",
     // Don't show minimap
@@ -151,5 +151,6 @@
     "claudeCode.allowDangerouslySkipPermissions": true,
     "githubPullRequests.pullBranch": "never",
     "cmake.configureOnEdit": false,
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "workbench.colorTheme": "Solarized Light"
 }
