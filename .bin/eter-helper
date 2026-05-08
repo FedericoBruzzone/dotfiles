@@ -114,7 +114,11 @@ case $COMMAND in
         echo "[eter-helper] Checking clang-format against git commit ${CLANG_FORMAT_COMMIT}"
         # git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(c|cc|cpp|cxx|h|hh|hpp|hxx)$' | xargs -r clang-format --dry-run --Werror
         # clang-format --dry-run --Werror $(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(c|cc|cpp|cxx|h|hh|hpp|hxx)$')
-        git clang-format --diff ${CLANG_FORMAT_COMMIT}
+        format_diff=$(git clang-format --diff ${CLANG_FORMAT_COMMIT} 2>&1)
+        echo "$format_diff"
+        if echo "$format_diff" | grep -q "^[-+]"; then
+          exit 1
+        fi
         ;;
     
     clang-format)
@@ -135,7 +139,7 @@ case $COMMAND in
         echo "[eter-helper] Running clang-tidy on the following files:"
         echo "$CHANGED_FILES"
         # Run clang-tidy on the changed files
-        clang-tidy $CHANGED_FILES -p ${BUILD_DIR} --header-filter='.*'
+        clang-tidy $CHANGED_FILES -p ${BUILD_DIR} --header-filter='.*' --warnings-as-errors='*'
         ;;  
 
     check-commit-clang-format)
