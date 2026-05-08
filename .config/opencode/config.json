@@ -1,0 +1,36 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "ask": {
+      "mode": "primary",
+      "prompt": "You have access to no tools, you can only respond to questions",
+      "tools": {
+        "*": false
+      }
+    }
+  },
+  "provider": {
+    "llama.cpp": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llama-server (local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8001/v1"
+      },
+      "models": {
+        "gemma-4-26b-q4km": {
+            "name": "Gemma 4.26B (Local M4 Pro)"
+        },
+        "youtu-2b-reasoning": {
+          "name": "Youtu LLM 2B (Local M4 Pro)"
+        },
+        "qwen3.6-35b-a3b": {
+          "name": "Qwen 3.6 35B (Local M4 Pro)"
+        },
+        "qwen3.6-27b-q4_k_m": {
+          "name": "Qwen 3.6 27B (Local M4 Pro)"
+        }
+      }
+    }
+  }
+}
+

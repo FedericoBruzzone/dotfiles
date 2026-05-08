@@ -26,6 +26,7 @@ ITEMS=(
   ".git_template"
   ".agents"
   ".claude"
+  ".config/opencode"
   "unimi.ovpn"
 )
 
