@@ -38,3 +38,4 @@ tags
 .agents/cache/
 .agents/history.jsonl
 .agents/.last-cleanup
+.agents/plugins/
