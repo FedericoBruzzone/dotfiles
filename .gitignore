@@ -39,3 +39,4 @@ tags
 .agents/history.jsonl
 .agents/.last-cleanup
 .agents/plugins/
+.config/zed/settings_backup.json
