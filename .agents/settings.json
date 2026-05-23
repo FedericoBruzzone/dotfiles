@@ -1,3 +1,6 @@
 {
-  "effortLevel": "max"
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  },
+  "skipDangerousModePermissionPrompt": true
 }
