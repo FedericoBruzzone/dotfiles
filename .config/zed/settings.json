@@ -7,6 +7,11 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "agent_servers": {
+    "claude-acp": {
+      "type": "registry"
+    }
+  },
   "theme": {
     "mode": "light",
     "light": "One Light",
@@ -26,10 +31,10 @@
   },
   "agent": {
     "default_model": {
-      "effort": "medium",
+      "effort": "high",
       "enable_thinking": true,
       "provider": "zed.dev",
-      "model": "gpt-5.3-codex",
+      "model": "claude-sonnet-4-6",
     },
     "inline_assistant_model": {
       "provider": "copilot_chat",

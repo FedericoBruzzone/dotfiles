@@ -2,5 +2,9 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
-  "skipDangerousModePermissionPrompt": true
+  "model": "opus",
+  "skipDangerousModePermissionPrompt": true,
+  "enabledPlugins": {
+    "academic-research-skills@academic-research-skills": true
+  }
 }

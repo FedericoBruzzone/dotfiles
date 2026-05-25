@@ -152,5 +152,5 @@
     "githubPullRequests.pullBranch": "never",
     "cmake.configureOnEdit": false,
     "cmake.configureOnOpen": false,
-    "workbench.colorTheme": "Solarized Light"
+    "workbench.colorTheme": "Light 2026"
 }

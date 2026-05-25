@@ -40,3 +40,5 @@ tags
 .agents/.last-cleanup
 .agents/plugins/
 .config/zed/settings_backup.json
+.agents/tasks/
+.agents/telemetry/
