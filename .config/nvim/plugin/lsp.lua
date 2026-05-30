@@ -183,9 +183,9 @@ vim.lsp.enable("clangd")
 vim.lsp.enable("ocamllsp")
 vim.lsp.enable("lua_ls")   -- via Mason
 vim.lsp.enable("texlab")   -- via Mason
-vim.lsp.enable("html")     -- via Mason
-vim.lsp.enable("css")      -- via Mason
 vim.lsp.enable("tinymist") -- via Mason
+-- vim.lsp.enable("html")     -- via Mason
+-- vim.lsp.enable("css")      -- via Mason
 
 if vim.lsp.inlay_hint then
     vim.lsp.inlay_hint.enable(true, { 0 })
