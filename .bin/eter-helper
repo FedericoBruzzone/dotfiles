@@ -78,7 +78,7 @@ case $COMMAND in
 
     build)
         echo "[eter-helper] Building project"
-        cmake --build ${BUILD_DIR} # ninja -C ${BUILD_DIR}
+        cmake --build ${BUILD_DIR}
         ;;
 
     rebuild)

@@ -166,6 +166,5 @@
     "editor.smoothScrolling": true,
     "terminal.integrated.smoothScrolling": true,
     "editor.cursorSmoothCaretAnimation": "on",
-    "workbench.colorTheme": "Light 2026",
 
 }

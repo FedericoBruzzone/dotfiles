@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # --- Configuration ---
-REPO_ROOT=${REPO_ROOT:-~/dev/llvm-project}
-BUILD_DIR=${BUILD_DIR:-${REPO_ROOT}/build}
-LLVM_DIR=${LLVM_DIR:-${REPO_ROOT}/build}
+LLVM_DIR=${LLVM_DIR:-~/dev/llvm-project/llvm-build}
+BUILD_DIR=./mlir-build
+LLVM_PATH_PREFIX=$(pwd)/llvm-build/bin
 
 # --- Helper Functions ---
 print_usage() {
@@ -12,7 +12,7 @@ print_usage() {
     echo ""
     echo "Commands:"
     echo "  config [BUILD_TYPE]                        Configure the MLIR project with CMake."
-    echo "  build [TARGET]                             Build the project using ninja (default target: mlir-opt)."
+    echo "  build                                      Build the project using ninja."
     echo "  rebuild                                    Re-configure and build the project from scratch."
     echo "  run-debug <file.mlir> [PASSES] [EMIT]      Run mlir-opt on a given MLIR file with debug info."
     echo "  run-pass <file.mlir> <passname> [EMIT]     Run a specific pass on a given MLIR file."
@@ -25,8 +25,7 @@ print_usage() {
     echo "  help                                       Show this help message."
     echo ""
     echo "Environment:"
-    echo "  REPO_ROOT   Path to the llvm-project repo root (default: ~/dev/llvm-project)"
-    echo "  BUILD_DIR   Path to the build directory (default: \$REPO_ROOT/build)"
+    echo "  LLVM_DIR    Path to LLVM build/install directory (default: ~/dev/llvm-project/llvm-build)"
     echo ""
     echo "Options:"
     echo "  BUILD_TYPE  Build type for configuration (e.g., Debug, Release). Default is Release."
@@ -37,38 +36,43 @@ print_usage() {
 
 # --- Main Script Logic ---
 
+# Show help message if no arguments are provided
 if [ $# -eq 0 ]; then
     print_usage
     exit 0
 fi
 
 COMMAND=$1
-shift
+shift # Remove the command from the arguments list
 
 case $COMMAND in
     config)
         BUILD_TYPE=${1:-Release}
-        echo "--- Configuring MLIR project (BUILD_TYPE=${BUILD_TYPE}) ---"
-        cmake -G Ninja \
-            -S "${REPO_ROOT}/llvm" \
-            -B "${BUILD_DIR}" \
-            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        echo "--- Configuring MLIR project ---"
+        mkdir -p ${BUILD_DIR}
+        LLVM_PATH_PREFIX=$(pwd)/llvm-build/bin
+        cmake -G Ninja -S llvm -B ${BUILD_DIR} \
             -DLLVM_ENABLE_PROJECTS="mlir" \
-            -DLLVM_TARGETS_TO_BUILD="AArch64;host" \
-            -DCMAKE_C_COMPILER=/usr/bin/clang \
-            -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+            -DLLVM_BUILD_EXAMPLES=ON \
+            -DLLVM_TARGETS_TO_BUILD="Native" \ #;NVPTX;AMDGPU
+            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+            -DLLVM_ENABLE_ASSERTIONS=ON \
+            -DCMAKE_C_COMPILER=${LLVM_PATH_PREFIX}/clang \
+            -DCMAKE_CXX_COMPILER=${LLVM_PATH_PREFIX}/clang++ \
+            -DCMAKE_LINKER=${LLVM_PATH_PREFIX}/lld \
+            -DLLVM_CCACHE_BUILD=ON \
+            -DMLIR_INCLUDE_INTEGRATION_TESTS=ON \
             -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path)
         ;;
 
     build)
-        TARGET=${1:-mlir-opt}
-        echo "--- Building target: ${TARGET} ---"
-        ninja -C "${BUILD_DIR}" ${TARGET}
+        echo "--- Building project ---"
+        ninja -C ${BUILD_DIR}
         ;;
 
     rebuild)
         echo "--- Rebuilding project from scratch ---"
-        rm -rf "${BUILD_DIR}"
+        rm -rf ${BUILD_DIR}
         $0 config
         $0 build
         ;;
@@ -82,7 +86,7 @@ case $COMMAND in
 
         INPUT_FILE=$1
         PASSES=${2:-}
-        EMIT_TYPE=${3:-stdout}
+        EMIT_TYPE=${3:-stdout} # none, mlir, stdout
 
         PASS_FLAGS=""
         if [ -n "$PASSES" ]; then
@@ -91,9 +95,15 @@ case $COMMAND in
 
         EMIT_FLAGS=""
         case "$EMIT_TYPE" in
-            mlir)   EMIT_FLAGS="-o ${INPUT_FILE%.*}.opt.mlir" ;;
-            stdout) EMIT_FLAGS="-o -" ;;
-            none)   EMIT_FLAGS="-o /dev/null" ;;
+            mlir)
+                EMIT_FLAGS="-o ${INPUT_FILE%.*}.opt.mlir"
+                ;;
+            stdout)
+                EMIT_FLAGS="-o -"
+                ;;
+            none)
+                EMIT_FLAGS="-o /dev/null"
+                ;;
             *)
                 echo "Warning: Unknown emit type '$EMIT_TYPE'. Defaulting to stdout."
                 EMIT_FLAGS="-o -"
@@ -101,6 +111,7 @@ case $COMMAND in
         esac
 
         echo "--- Running mlir-opt on ${INPUT_FILE} (Emit: ${EMIT_TYPE}) ---"
+
         ${BUILD_DIR}/bin/mlir-opt \
             ${PASS_FLAGS} \
             --mlir-print-debuginfo \
@@ -122,9 +133,15 @@ case $COMMAND in
 
         EMIT_FLAGS=""
         case "$EMIT_TYPE" in
-            mlir)   EMIT_FLAGS="-o ${INPUT_FILE%.*}.${PASS_NAME}.mlir" ;;
-            stdout) EMIT_FLAGS="-o -" ;;
-            none)   EMIT_FLAGS="-o /dev/null" ;;
+            mlir)
+                EMIT_FLAGS="-o ${INPUT_FILE%.*}.${PASS_NAME}.mlir"
+                ;;
+            stdout)
+                EMIT_FLAGS="-o -"
+                ;;
+            none)
+                EMIT_FLAGS="-o /dev/null"
+                ;;
             *)
                 echo "Warning: Unknown emit type '$EMIT_TYPE'. Defaulting to none."
                 EMIT_FLAGS="-o /dev/null"
@@ -132,6 +149,7 @@ case $COMMAND in
         esac
 
         echo "--- Running pass ${PASS_NAME} on ${INPUT_FILE} (Emit: ${EMIT_TYPE}) ---"
+
         ${BUILD_DIR}/bin/mlir-opt \
             --pass-pipeline="builtin.module(${PASS_NAME})" \
             --debug-only="${PASS_NAME}" \
@@ -147,7 +165,8 @@ case $COMMAND in
             exit 1
         fi
         echo "--- Running lit tests ---"
-        ${BUILD_DIR}/bin/llvm-lit -a -v "${1}"
+        INPUT_FOLDER=$1
+        ${BUILD_DIR}/bin/llvm-lit -a -v "${INPUT_FOLDER}"
         ;;
 
     update-test-checks)
@@ -158,7 +177,7 @@ case $COMMAND in
         fi
         INPUT_FILE=$1
         echo "--- Updating FileCheck patterns in ${INPUT_FILE} ---"
-        python3 "${REPO_ROOT}/llvm/utils/update_test_checks.py" \
+        python3 llvm/utils/update_test_checks.py \
             --opt-binary=${BUILD_DIR}/bin/mlir-opt \
             ${INPUT_FILE}
         ;;
@@ -234,18 +253,26 @@ case $COMMAND in
         [[ "$OSTYPE" == "darwin"* ]] && SYSROOT="-isysroot $(xcrun --show-sdk-path)"
 
         echo "--- Compiling ${INPUT_FILE} to executable ${OUT_NAME} (llc opts: ${LLC_OPT}) ---"
+
+        # Lower MLIR to LLVM IR
         ${BUILD_DIR}/bin/mlir-translate \
             --mlir-to-llvmir \
             "${INPUT_FILE}" \
             -o "${LL_FILE}"
+
+        # Compile LLVM IR to an object file
         ${LLVM_DIR}/bin/llc ${LLC_OPT} -filetype=obj "${LL_FILE}" -o "${OBJ_FILE}"
+
+        # Link the object file to an executable
         ${LLVM_DIR}/bin/clang "${OBJ_FILE}" -o "${OUT_NAME}" ${SYSROOT}
+
+        # Remove intermediate files
         rm -f "${LL_FILE}" "${OBJ_FILE}"
         ;;
 
     clean)
         echo "--- Cleaning build directory ---"
-        rm -rf "${BUILD_DIR}"
+        rm -rf ${BUILD_DIR}
         ;;
 
     help|*)
