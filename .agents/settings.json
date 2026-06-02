@@ -6,5 +6,5 @@
   "enabledPlugins": {
     "academic-research-skills@academic-research-skills": true
   },
-  "model": "opus"
+  "effortLevel": "xhigh"
 }
