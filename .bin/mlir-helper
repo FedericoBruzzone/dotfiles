@@ -61,8 +61,8 @@ case $COMMAND in
         ;;
 
     build)
-        TARGET=${1:-mlir-opt}
-        echo "--- Building target: ${TARGET} ---"
+        TARGET=${1:-}
+        echo "--- Building target: ${TARGET:-all} ---"
         ninja -C "${BUILD_DIR}" ${TARGET}
         ;;
 
