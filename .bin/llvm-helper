@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # --- Configuration ---
-LLVM_DIR=${LLVM_DIR:-~/dev/llvm-project/build}
+REPO_ROOT=${REPO_ROOT:-~/dev/llvm-project}
+LLVM_DIR=${LLVM_DIR:-${REPO_ROOT}/build}
 BUILD_DIR=./build
 
 # --- Helper Functions ---
@@ -13,7 +14,7 @@ print_usage() {
     echo "  config [BUILD_TYPE]                    Configure the project with CMake."
     echo "  build                                  Build the project using ninja."
     echo "  rebuild                                Re-configure and build the project from scratch."
-    echo "  run-debug <file.ll> [LEVEL] [EMIT]     Run the opt tool on a given LLVM IR file with debug info."
+    echo "  run-debug <file.ll> [LEVEL] [EMIT] [PASS]  Run the opt tool on a given LLVM IR file with debug info."
     echo "  run-pass <file.ll> <passname> [EMIT]   Run a specific optimization pass on a given LLVM IR file."
     echo "  clang-pass <file.c> <passname> [LEVEL] Debug a pass during Clang compilation."
     echo "  test <folder|file.ll>                  Run the lit test suite."
@@ -21,6 +22,7 @@ print_usage() {
     echo "  pipeline [LEVEL]                       Print the optimization pipeline (default LEVEL: -O0)."
     echo "  emit-llvm <file.c> [LEVEL]             Generate LLVM IR from a C file (default LEVEL: -O0)."
     echo "  llvm-compile <file.ll> [OUT] [LLC_OPT] Compile LLVM IR (.ll/.bc) to an executable using llc and clang (default LLC_OPT: -O0)."
+    echo "  clang-link <file.ll> [OUT] [OPT_LEVEL] Compile LLVM IR directly with clang (no llc step, default OPT_LEVEL: -O0)."
     echo "  clean                                  Clean the build directory."
     echo "  help                                   Show this help message."
     echo ""
@@ -31,6 +33,7 @@ print_usage() {
     echo "  BUILD_TYPE  Build type for configuration (e.g., Debug, Release). Default is Debug."
     echo "  LEVEL       Optimization level (e.g., -O0, -O1, -O2, -O3, -Os, -Oz). Default is -O0"
     echo "  EMIT        Type of output to emit: none, llvm, bc, stdout. Default is stdout."
+    echo "  PASS        If given, restrict debug output to this pass name (-debug-only=PASS). Default is all passes."
 
 }
 
@@ -81,6 +84,7 @@ case $COMMAND in
             INPUT_FILE=$1
             OPT_LEVEL=${2:--O0}
             EMIT_TYPE=${3:-stdout} # none, llvm, bc
+            DEBUG_PASS=${4:-}
 
             EMIT_FLAGS=""
             case "$EMIT_TYPE" in
@@ -104,11 +108,14 @@ case $COMMAND in
                     ;;
             esac
 
+            DEBUG_FLAG="-debug"
+            [ -n "$DEBUG_PASS" ] && DEBUG_FLAG="-debug-only=${DEBUG_PASS}"
+
             echo "--- Running opt on ${INPUT_FILE} (Emit: ${EMIT_TYPE}) ---"
 
             ${LLVM_DIR}/bin/opt \
                 ${OPT_LEVEL} \
-                -stats -debug \
+                -stats ${DEBUG_FLAG} \
                 ${EMIT_FLAGS} \
                 ${INPUT_FILE}
         ;;
@@ -190,7 +197,7 @@ case $COMMAND in
         echo "--- Updating FileCheck patterns in ${INPUT_FILE} ---"
         # ${LLVM_DIR}/bin/opt  -S ${INPUT_FILE} -o ${OUTPUT_FILE}  | ${LLVM_DIR}/bin/FileCheck --update-checks ${INPUT_FILE} -
         # python3 llvm/utils/update_test_checks.py --opt-binary=./llvm-build/bin/opt --version 5 llvm/test/Transforms/TailCallElim/tre-call-readonly-nocapture.ll
-        python3 ${LLVM_DIR}/utils/update_test_checks.py \
+        python3 ${REPO_ROOT}/llvm/utils/update_test_checks.py \
             --opt-binary=${LLVM_DIR}/bin/opt \
             --version 5 \
             ${INPUT_FILE}
@@ -246,6 +253,22 @@ case $COMMAND in
 
         # Remove intermediate object file
         rm -f "${OBJ_FILE}"
+        ;;
+
+    clang-link)
+        if [ -z "$1" ]; then
+            echo "Error: Missing input file for 'clang-link' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        OUT_NAME=${2:-${INPUT_FILE%.*}}
+        OPT_LEVEL=${3:--O0}
+        SYSROOT=""
+        [[ "$OSTYPE" == "darwin"* ]] && SYSROOT="-isysroot $(xcrun --show-sdk-path)"
+
+        echo "--- Compiling ${INPUT_FILE} to executable ${OUT_NAME} (${OPT_LEVEL}) ---"
+        ${LLVM_DIR}/bin/clang ${OPT_LEVEL} "${INPUT_FILE}" -o "${OUT_NAME}" ${SYSROOT}
         ;;
 
     clean)

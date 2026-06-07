@@ -14,7 +14,7 @@ print_usage() {
     echo "  config [BUILD_TYPE]                        Configure the MLIR project with CMake."
     echo "  build [TARGET]                             Build the project using ninja (default target: mlir-opt)."
     echo "  rebuild                                    Re-configure and build the project from scratch."
-    echo "  run-debug <file.mlir> [PASSES] [EMIT]      Run mlir-opt on a given MLIR file with debug info."
+    echo "  run-debug <file.mlir> [PASSES] [EMIT] [PASS]  Run mlir-opt on a given MLIR file with debug info."
     echo "  run-pass <file.mlir> <passname> [EMIT]     Run a specific pass on a given MLIR file."
     echo "  test <folder|file.mlir>                    Run the lit test suite."
     echo "  update-test-checks <file.mlir>             Update the FileCheck patterns in the given test file."
@@ -32,6 +32,7 @@ print_usage() {
     echo "  BUILD_TYPE  Build type for configuration (e.g., Debug, Release). Default is Release."
     echo "  PASSES      Pass pipeline string (e.g., 'canonicalize,cse')."
     echo "  EMIT        Type of output to emit: none, mlir, stdout. Default is stdout."
+    echo "  PASS        If given, restrict debug output to this pass name (--debug-only=PASS). Default is all passes."
     echo "  TARGET      Translation target: llvm-ir, llvm-bc. Default is llvm-ir."
 }
 
@@ -83,6 +84,7 @@ case $COMMAND in
         INPUT_FILE=$1
         PASSES=${2:-}
         EMIT_TYPE=${3:-stdout}
+        DEBUG_PASS=${4:-}
 
         PASS_FLAGS=""
         if [ -n "$PASSES" ]; then
@@ -100,11 +102,14 @@ case $COMMAND in
                 ;;
         esac
 
+        DEBUG_FLAG="--debug"
+        [ -n "$DEBUG_PASS" ] && DEBUG_FLAG="--debug-only=${DEBUG_PASS}"
+
         echo "--- Running mlir-opt on ${INPUT_FILE} (Emit: ${EMIT_TYPE}) ---"
         ${BUILD_DIR}/bin/mlir-opt \
             ${PASS_FLAGS} \
             --mlir-print-debuginfo \
-            --debug \
+            ${DEBUG_FLAG} \
             --mlir-timing \
             ${EMIT_FLAGS} \
             "${INPUT_FILE}"
