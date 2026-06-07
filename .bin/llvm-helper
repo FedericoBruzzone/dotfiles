@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # --- Configuration ---
-LLVM_DIR=${LLVM_DIR:-~/dev/llvm-project/llvm-build}
-BUILD_DIR=./llvm-build
+LLVM_DIR=${LLVM_DIR:-~/dev/llvm-project/build}
+BUILD_DIR=./build
 
 # --- Helper Functions ---
 print_usage() {
