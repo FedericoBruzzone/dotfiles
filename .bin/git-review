@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+print_usage() {
+    cat <<EOF
+Usage: $(basename "$0") <pr-number> [remote] [base-branch]
+
+Fetch a GitHub PR, check it out in a local branch, and show the diff.
+
+Arguments:
+  pr-number     PR number (e.g. 203323)
+  remote        Git remote to fetch from (default: auto-detected: upstream > origin)
+  base-branch   Base branch to diff against (default: main)
+
+Examples:
+  $(basename "$0") 203323
+  $(basename "$0") 203323 upstream main
+  $(basename "$0") 203323 origin release/19.x
+EOF
+}
+
+if [ $# -lt 1 ] || [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    print_usage
+    exit 0
+fi
+
+PR_NUM=$1
+REMOTE=${2:-}
+BASE_BRANCH=${3:-main}
+BRANCH_NAME="pr-${PR_NUM}"
+
+# Auto-detect remote if not specified
+if [ -z "$REMOTE" ]; then
+    for candidate in upstream origin; do
+        if git remote get-url "$candidate" &>/dev/null; then
+            REMOTE=$candidate
+            break
+        fi
+    done
+    if [ -z "$REMOTE" ]; then
+        echo "Error: no git remote found (tried: upstream, origin)"
+        exit 1
+    fi
+    echo "Using remote: $REMOTE"
+fi
+
+echo "--- Fetching PR #${PR_NUM} from ${REMOTE} ---"
+git fetch "$REMOTE" "pull/${PR_NUM}/head:${BRANCH_NAME}"
+
+echo "--- Checking out ${BRANCH_NAME} ---"
+git checkout "${BRANCH_NAME}"
+
+echo ""
+echo "--- Commits (against ${BASE_BRANCH}) ---"
+git log --oneline "${REMOTE}/${BASE_BRANCH}..HEAD" 2>/dev/null || \
+    git log --oneline "${BASE_BRANCH}..HEAD" 2>/dev/null
+
+echo ""
+echo "--- Diff (against ${BASE_BRANCH}) ---"
+git diff "${REMOTE}/${BASE_BRANCH}..HEAD" 2>/dev/null || \
+    git diff "${BASE_BRANCH}..HEAD" 2>/dev/null
+
+echo ""
+echo "--- Done ---"
+echo "Branch: ${BRANCH_NAME}"
+echo "To return to ${BASE_BRANCH}: git checkout ${BASE_BRANCH}"
+echo "To delete: git branch -D ${BRANCH_NAME}"
