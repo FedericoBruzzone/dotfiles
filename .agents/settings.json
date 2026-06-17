@@ -6,6 +6,5 @@
   "enabledPlugins": {
     "academic-research-skills@academic-research-skills": true
   },
-  "effortLevel": "xhigh",
-  "model": "claude-fable-5[1m]"
+  "effortLevel": "xhigh"
 }

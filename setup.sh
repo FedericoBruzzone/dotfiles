@@ -18,6 +18,7 @@ RELINK="${RELINK:-0}"
 ITEMS=(
   ".bin"
   ".zshrc"
+  ".vimrc"
   ".gitconfig"
   ".gitignore_global"
   ".config/nvim"
