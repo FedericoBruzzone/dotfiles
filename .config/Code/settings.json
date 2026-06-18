@@ -166,5 +166,6 @@
     "editor.smoothScrolling": true,
     "terminal.integrated.smoothScrolling": true,
     "editor.cursorSmoothCaretAnimation": "on",
+    "chat.viewSessions.orientation": "stacked",
 
 }
