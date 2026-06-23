@@ -21,6 +21,7 @@ print_usage() {
     echo "  pipeline <file.mlir> [PASSES]              Print the pass pipeline with timing."
     echo "  translate <file.mlir> [TARGET]             Translate MLIR to another representation (e.g., llvm-ir, llvm-bc)."
     echo "  mlir-compile <file.mlir> [OUT] [OPT_LEVEL] Lower MLIR to LLVM IR and compile to an executable."
+    echo "  check                                      Run the MLIR check target (ninja -C build check-mlir)."
     echo "  clean                                      Clean the build directory."
     echo "  help                                       Show this help message."
     echo ""
@@ -54,7 +55,7 @@ case $COMMAND in
             -S "${REPO_ROOT}/llvm" \
             -B "${BUILD_DIR}" \
             -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-            -DLLVM_ENABLE_PROJECTS="mlir" \
+            -DLLVM_ENABLE_PROJECTS="mlir;clang" \
             -DLLVM_TARGETS_TO_BUILD="AArch64;host" \
             -DCMAKE_C_COMPILER=/usr/bin/clang \
             -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
@@ -246,6 +247,11 @@ case $COMMAND in
         ${LLVM_DIR}/bin/llc ${LLC_OPT} -filetype=obj "${LL_FILE}" -o "${OBJ_FILE}"
         ${LLVM_DIR}/bin/clang "${OBJ_FILE}" -o "${OUT_NAME}" ${SYSROOT}
         rm -f "${LL_FILE}" "${OBJ_FILE}"
+        ;;
+
+    check)
+        echo "--- Running check-mlir ---"
+        ninja -C "${BUILD_DIR}" check-mlir
         ;;
 
     clean)

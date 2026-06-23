@@ -1,0 +1,212 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT="$(basename "$0")"
+DEFAULT_FIGS_DIR="figs"
+PYGMENTS_VENV="${HOME}/texmf/tex/latex/adapt-lab/trunk/showcode/pygmentize/venv"
+
+die()  { echo "${SCRIPT}: error: $*" >&2; exit 1; }
+info() { echo "[${SCRIPT}] $*"; }
+
+usage() {
+    cat <<EOF
+Usage: ${SCRIPT} <command> [options] <name>
+
+<name>  base name of the main .tex file (without extension)
+
+Commands:
+  compile                     pdflatex → bibtex → pdflatex × 2
+  force                       compile with -interaction=nonstopmode
+  figs                        compile all .tex files in --figs-dir
+  all                         figs then compile
+  interactive                 latexmk -pvc (live preview)
+  clean                       remove temp files (PDF kept)
+  clean-pdf                   remove temp files and PDF
+  diff <name> <old-dir> <old-name>
+                              latexdiff: <name> (current dir) vs <old-dir>/<old-name>
+
+Options:
+  --bbl <file>      copy <file> as <name>.bbl instead of running bibtex
+  --figs-dir <dir>  directory containing figure .tex files (default: ${DEFAULT_FIGS_DIR})
+  -h, --help        show this help and exit
+
+Examples:
+  ${SCRIPT} compile mypaper
+  ${SCRIPT} compile --bbl mypaper.short.bbl mypaper
+  ${SCRIPT} diff mypaper ../v1 mypaper-v1
+  ${SCRIPT} diff --bbl diff.short.bbl mypaper ../v1 mypaper-v1
+EOF
+}
+
+# ── PATH: prepend pygments venv if present ────────────────────────────────────
+[[ -d "${PYGMENTS_VENV}/bin" ]] && export PATH="${PYGMENTS_VENV}/bin:${PATH}"
+
+# ── arg parsing ───────────────────────────────────────────────────────────────
+BBL=""
+FIGS_DIR="${DEFAULT_FIGS_DIR}"
+POSITIONAL=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)  usage; exit 0 ;;
+        --bbl)      [[ $# -gt 1 ]] || die "--bbl requires an argument"; BBL="$2"; shift 2 ;;
+        --figs-dir) [[ $# -gt 1 ]] || die "--figs-dir requires an argument"; FIGS_DIR="$2"; shift 2 ;;
+        -*)         die "unknown option: $1" ;;
+        *)          POSITIONAL+=("$1"); shift ;;
+    esac
+done
+
+[[ ${#POSITIONAL[@]} -ge 1 ]] || { usage; exit 1; }
+COMMAND="${POSITIONAL[0]}"
+
+NAME=""
+DIFF_OLD_DIR=""
+DIFF_OLD_NAME=""
+
+case "${COMMAND}" in
+    compile|force|figs|all|interactive|clean|clean-pdf)
+        [[ ${#POSITIONAL[@]} -ge 2 ]] || die "'${COMMAND}' requires <name>"
+        NAME="${POSITIONAL[1]%.tex}"
+        ;;
+    diff)
+        [[ ${#POSITIONAL[@]} -ge 4 ]] || die "diff requires: <name> <old-dir> <old-name>"
+        NAME="${POSITIONAL[1]%.tex}"
+        DIFF_OLD_DIR="${POSITIONAL[2]}"
+        DIFF_OLD_NAME="${POSITIONAL[3]%.tex}"
+        ;;
+    *) die "unknown command: ${COMMAND}" ;;
+esac
+
+# ── compilation primitives ────────────────────────────────────────────────────
+_pdflatex() {
+    pdflatex -shell-escape -file-line-error "$@"
+}
+
+_pdflatex_nonstop() {
+    pdflatex -shell-escape -interaction=nonstopmode -file-line-error "$@"
+}
+
+_bibtex() {
+    bibtex "$1"
+}
+
+_use_bbl() {      # $1 = target base name (no ext), $2 = bbl source
+    info "Using provided BBL: $2 → ${1}.bbl"
+    cp "$2" "${1}.bbl"
+}
+
+# ── clean helper ──────────────────────────────────────────────────────────────
+_clean_dir() {    # $1 = directory path (no trailing slash needed)
+    local d="${1:-.}"
+    rm -f \
+        "${d}/"*.aux "${d}/"*.bbl "${d}/"*.blg "${d}/"*.log "${d}/"*.out \
+        "${d}/"*.spl "${d}/"*.synctex.gz "${d}/"*.toc "${d}/"*.bcf \
+        "${d}/"*.run.xml "${d}/"*.nav "${d}/"*.snm "${d}/"*.vrb \
+        "${d}/"*.fdb_latexmk "${d}/"*.fls "${d}/"*.lof "${d}/"*.lot \
+        "${d}/"*.xdv "${d}/"*.dvi "${d}/"*.bak "${d}/"*.listing "${d}/"*.vtc 2>/dev/null || true
+    rm -rf "${d}/"_minted* "${d}/."*-cache 2>/dev/null || true
+}
+
+# ── commands ──────────────────────────────────────────────────────────────────
+do_compile() {
+    local nonstop="${1}"  # "true" | "false"
+    local pdflatex_fn
+    [[ "${nonstop}" == "true" ]] && pdflatex_fn=_pdflatex_nonstop || pdflatex_fn=_pdflatex
+
+    "${pdflatex_fn}" "${NAME}.tex"
+
+    if [[ -n "${BBL}" ]]; then
+        _use_bbl "${NAME}" "${BBL}"
+    else
+        _bibtex "${NAME}"
+    fi
+
+    "${pdflatex_fn}" "${NAME}.tex"
+    "${pdflatex_fn}" "${NAME}.tex"
+}
+
+do_figs() {
+    [[ -d "${FIGS_DIR}" ]] || die "figs directory not found: ${FIGS_DIR}"
+    local fig figdir
+    while IFS= read -r -d '' fig; do
+        info "Compiling figure: ${fig}"
+        figdir="$(dirname "${fig}")"
+        (
+            cd "${figdir}"
+            local base
+            base="$(basename "${fig}")"
+            _pdflatex "${base}"
+            _pdflatex "${base}"
+            _pdflatex "${base}"
+        )
+    done < <(find "${FIGS_DIR}" -type f -name '*.tex' -print0 | sort -z)
+}
+
+do_interactive() {
+    latexmk -pdf -pvc -shell-escape -interaction=nonstopmode -file-line-error "./${NAME}.tex"
+}
+
+do_clean() {
+    _clean_dir "."
+    if [[ -d "${FIGS_DIR}" ]]; then
+        local fig
+        while IFS= read -r -d '' fig; do
+            _clean_dir "$(dirname "${fig}")"
+        done < <(find "${FIGS_DIR}" -type f -name '*.tex' -print0)
+    fi
+}
+
+do_clean_pdf() {
+    do_clean
+    rm -f "${NAME}.pdf"
+    if [[ -d "${FIGS_DIR}" ]]; then
+        local fig
+        while IFS= read -r -d '' fig; do
+            rm -f "${fig%.tex}.pdf"
+        done < <(find "${FIGS_DIR}" -type f -name '*.tex' -print0)
+    fi
+}
+
+do_diff() {
+    local new_name="${NAME}"
+    local old_dir
+    old_dir="$(cd "${DIFF_OLD_DIR}" && pwd)"
+    local old_name="${DIFF_OLD_NAME}"
+
+    info "Flattening ${new_name} (current dir)"
+    latexpand "${new_name}.tex" > "${new_name}_flat.tex"
+
+    info "Flattening ${old_name} (${old_dir})"
+    (cd "${old_dir}" && latexpand "${old_name}.tex" > "${old_name}_flat.tex")
+
+    info "Generating diff.tex"
+    latexdiff --type=UNDERLINE "${old_dir}/${old_name}_flat.tex" "${new_name}_flat.tex" > diff.tex
+
+    _pdflatex_nonstop diff.tex
+
+    if [[ -n "${BBL}" ]]; then
+        _use_bbl "diff" "${BBL}"
+    else
+        _bibtex diff
+    fi
+
+    _pdflatex_nonstop diff.tex
+    _pdflatex_nonstop diff.tex
+
+    info "Cleaning up flat files"
+    rm -f "${new_name}_flat.tex" "${old_dir}/${old_name}_flat.tex"
+}
+
+# ── dispatch ──────────────────────────────────────────────────────────────────
+case "${COMMAND}" in
+    compile)     do_compile false ;;
+    force)       do_compile true  ;;
+    figs)        do_figs           ;;
+    all)         do_figs; do_compile false ;;
+    interactive) do_interactive    ;;
+    clean)       do_clean          ;;
+    clean-pdf)   do_clean_pdf      ;;
+    diff)        do_diff           ;;
+esac
+
+info "Done."
