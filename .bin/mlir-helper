@@ -59,7 +59,8 @@ case $COMMAND in
             -DLLVM_TARGETS_TO_BUILD="AArch64;host" \
             -DCMAKE_C_COMPILER=/usr/bin/clang \
             -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
-            -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path)
+            -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path) \
+            -DLLVM_CCACHE_BUILD=ON
         ;;
 
     build)

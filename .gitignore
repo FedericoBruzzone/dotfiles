@@ -43,3 +43,4 @@ tags
 .agents/tasks/
 .agents/telemetry/
 .agents/paste-cache/
+.agents/session-env/
