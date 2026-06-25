@@ -58,6 +58,7 @@ tags
 .claude/paste-cache/
 .claude/session-env/
 .claude/telemetry/
+.claude/plugins/
 .claude/.last-cleanup
 
 # OpenCode metadata (.config/opencode)
