@@ -1,4 +1,4 @@
-# Claude Code Agent Guidelines
+# Code Agent Guidelines
 
 ## Git Operations
 
@@ -20,15 +20,10 @@
 
 - **No unicode symbols**: avoid arrows (→, ←, =>, etc), emoji, checkmarks (✓), or decorative symbols unless explicitly requested
 - **Terse by default**: one-sentence updates at key moments, no unnecessary narration
-- **No trailing summaries**: user can read the diff
-- **Complete sentences**: pick up cold, no jargon or unexplained shorthand from prior conversation
 
 ## Execution Approach
 
 - **Ask before risky actions**: destructive operations, force-pushes, large refactors, API calls that affect shared state
-- **Trust framework guarantees**: don't add error handling for things that can't happen
-- **Verify before recommending**: if suggesting a file/function, check it exists first
-- **Use dedicated tools**: prefer Read/Edit/Write over Bash for file operations
 
 ## Code Quality
 
@@ -36,9 +31,3 @@
 - **Minimal comments**: only add when WHY is non-obvious, not to explain WHAT
 - **Prefer completeness**: finish implementation in one turn rather than leaving TODO stubs
 - **No backwards-compat hacks**: if something is unused, delete it completely
-
-## Testing & Verification
-
-- **UI changes require manual testing**: start dev server and test golden path + edge cases in browser before marking complete
-- **Trust type checkers**: type checking and tests verify correctness, not feature correctness
-- **No "wait and see"**: verify changes work before marking complete
