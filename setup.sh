@@ -25,6 +25,7 @@ ITEMS=(
   ".config/ghostty"
   ".config/zed"
   ".git_template"
+  ".ai"
   ".agents"
   ".claude"
   ".config/opencode"

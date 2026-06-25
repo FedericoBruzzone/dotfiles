@@ -44,3 +44,22 @@ tags
 .agents/telemetry/
 .agents/paste-cache/
 .agents/session-env/
+
+# Claude Code metadata (.claude)
+.claude/backups/
+.claude/cache/
+.claude/file-history/
+.claude/history.jsonl
+.claude/ide/
+.claude/projects/
+.claude/sessions/
+.claude/plans/
+.claude/shell-snapshots/
+.claude/paste-cache/
+.claude/session-env/
+.claude/telemetry/
+.claude/.last-cleanup
+
+# OpenCode metadata (.config/opencode)
+.config/opencode/node_modules/
+.config/opencode/install-counts-cache.json
