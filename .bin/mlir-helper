@@ -57,6 +57,7 @@ case $COMMAND in
             -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
             -DLLVM_ENABLE_PROJECTS="mlir;clang" \
             -DLLVM_TARGETS_TO_BUILD="AArch64;host" \
+            -DMLIR_INCLUDE_INTEGRATION_TESTS=ON \
             -DCMAKE_C_COMPILER=/usr/bin/clang \
             -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
             -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path) \

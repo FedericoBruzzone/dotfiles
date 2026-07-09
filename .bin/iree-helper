@@ -1,0 +1,371 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Configuration ---
+REPO_ROOT=${REPO_ROOT:-~/dev/iree}
+BUILD_DIR=${BUILD_DIR:-${REPO_ROOT}/build}
+CLANG_FORMAT_COMMIT=HEAD
+CLANG_TIDY_COMMIT=HEAD
+
+# llvm-lit lives in different places depending on how LLVM was built into the
+# tree (in-tree llvm-project vs. a preinstalled/prebuilt LLVM), so probe both.
+if [ -z "${LIT_COMMAND:-}" ]; then
+    if [ -x "${BUILD_DIR}/bin/llvm-lit" ]; then
+        LIT_COMMAND="${BUILD_DIR}/bin/llvm-lit"
+    else
+        LIT_COMMAND="${BUILD_DIR}/llvm-project/bin/llvm-lit"
+    fi
+fi
+
+# Tool dirs to put first on PATH so RUN lines (e.g. `iree-opt | FileCheck`)
+# resolve the binaries just built instead of any system/Homebrew LLVM install.
+TEST_TOOL_PATH="${BUILD_DIR}/llvm-project/bin:${BUILD_DIR}/tools"
+
+# ctest runs tests single-threaded unless told otherwise.
+CTEST_JOBS=${CTEST_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 1)}
+
+# --- Helper Functions ---
+print_usage() {
+    echo "Usage: iree-helper <command> [arguments]"
+    echo ""
+    echo "Commands:"
+    echo "  config [BUILD_TYPE]                        Configure the IREE project with CMake."
+    echo "  build [TARGET]                             Build the project using ninja."
+    echo "  build-test-deps                            Build fixtures (.vmfb files) needed by e2e"
+    echo "                                              check-tests (ninja -k0 iree-test-deps)."
+    echo "  rebuild                                    Re-configure and build the project from scratch."
+    echo "  sync-submodules                            Sync and update all git submodules."
+    echo "  compile <file.mlir> [BACKEND] [EMIT]       Compile a model with iree-compile."
+    echo "  run <file.vmfb> [FUNCTION] [ARGS...]       Run a compiled module with iree-run-module."
+    echo "  run-mlir <file.mlir> [BACKEND]             Compile and run MLIR directly with iree-run-mlir."
+    echo "  opt <file.mlir> [PASSES] [EMIT]            Run iree-opt on a given MLIR file."
+    echo "  benchmark <file.vmfb> [FUNCTION]           Benchmark a compiled module."
+    echo "  test <folder|file>                         Run lit directly on a specific file or folder"
+    echo "                                              (use this to iterate on one test)."
+    echo "  check [--unit|--e2e]                       Run the whole test suite via ctest (uses the"
+    echo "                                              same tool paths as CI). --unit restricts to"
+    echo "                                              lit-test+gtest, --e2e to compile-and-run"
+    echo "                                              check-tests; takes no file/regex argument."
+    echo "  ctest [FILTER]                             Run ctest (optionally filtered by regex)."
+    echo "  update-test-checks <file.mlir>             Update the FileCheck patterns in the given test file."
+    echo "  check-clang-format [COMMIT]                Check clang-format on changed files vs a git commit."
+    echo "  clang-format [COMMIT]                      Format changed files vs a git commit."
+    echo "  clang-tidy [COMMIT]                        Run clang-tidy on changed files vs a git commit."
+    echo "  create-clangd                              Create a .clangd configuration file."
+    echo "  show-config                                Show current configuration and environment variables."
+    echo "  clean                                      Clean the build directory."
+    echo "  help                                       Show this help message."
+    echo ""
+    echo "Environment:"
+    echo "  REPO_ROOT    Path to the IREE repo root (default: ~/thirdparty/iree)"
+    echo "  BUILD_DIR    Path to the build directory (default: <parent-of-REPO_ROOT>/iree-build)"
+    echo "  LIT_COMMAND  Command to run lit tests (default: \$BUILD_DIR/bin/llvm-lit)"
+    echo "  CTEST_JOBS   Parallel jobs for check/ctest (default: number of CPU cores)"
+    echo ""
+    echo "Options:"
+    echo "  BUILD_TYPE   Build type for configuration (e.g., Debug, RelWithDebInfo). Default is RelWithDebInfo."
+    echo "  BACKEND      iree-compile target backend (e.g., llvm-cpu, vulkan-spirv, cuda). Default is llvm-cpu."
+    echo "  EMIT         Output type: none, mlir, vmfb, stdout. Default is vmfb."
+    echo "  PASSES       Pass pipeline string (e.g., 'iree-preprocessing-pad-linalg-ops')."
+    echo "  FILTER       ctest regex filter string."
+    echo ""
+    echo "Location:"
+    echo "  iree-helper is located at: $(realpath $0)"
+}
+
+# --- Main Script Logic ---
+
+if [ $# -eq 0 ]; then
+    print_usage
+    exit 0
+fi
+
+COMMAND=$1
+shift
+
+case $COMMAND in
+    config)
+        BUILD_TYPE=${1:-RelWithDebInfo}
+        echo "[iree-helper] Configuring IREE project (BUILD_TYPE=${BUILD_TYPE})"
+        cmake -G Ninja \
+            -S "${REPO_ROOT}" \
+            -B "${BUILD_DIR}" \
+            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+            -DIREE_ENABLE_ASSERTIONS=ON \
+            -DIREE_ENABLE_SPLIT_DWARF=ON \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DIREE_ENABLE_LLD=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        ;;
+
+    build)
+        TARGET=${1:-}
+        echo "[iree-helper] Building target: ${TARGET:-all}"
+        cmake --build "${BUILD_DIR}" ${TARGET:+--target ${TARGET}}
+        ;;
+
+    build-test-deps)
+        echo "[iree-helper] Building iree-test-deps (fixtures for e2e/check-test)"
+        # -k 0: keep going past failures (e.g. a broken GPU backend fixture)
+        # instead of stopping at the first one, so unrelated fixtures still get built.
+        ninja -C "${BUILD_DIR}" -k 0 iree-test-deps
+        ;;
+
+    rebuild)
+        echo "[iree-helper] Rebuilding project from scratch"
+        rm -rf "${BUILD_DIR}"
+        $0 config
+        $0 build
+        ;;
+
+    sync-submodules)
+        echo "[iree-helper] Syncing git submodules"
+        git -C "${REPO_ROOT}" submodule sync --recursive
+        git -C "${REPO_ROOT}" submodule update --init --recursive
+        ;;
+
+    compile)
+        if [ -z "${1:-}" ]; then
+            echo "[iree-helper] Error: Missing file argument for 'compile' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        BACKEND=${2:-llvm-cpu}
+        EMIT_TYPE=${3:-vmfb}
+
+        case "$EMIT_TYPE" in
+            vmfb)   OUTPUT_FILE="${INPUT_FILE%.*}.vmfb" ; EMIT_FLAGS="--output-file=${OUTPUT_FILE}" ;;
+            mlir)   OUTPUT_FILE="${INPUT_FILE%.*}.compiled.mlir" ; EMIT_FLAGS="--output-file=${OUTPUT_FILE}" ;;
+            stdout) EMIT_FLAGS="--output-file=-" ;;
+            none)   EMIT_FLAGS="--output-file=/dev/null" ;;
+            *)
+                echo "[iree-helper] Warning: Unknown emit type '${EMIT_TYPE}'. Defaulting to vmfb."
+                OUTPUT_FILE="${INPUT_FILE%.*}.vmfb"
+                EMIT_FLAGS="--output-file=${OUTPUT_FILE}"
+                ;;
+        esac
+
+        echo "[iree-helper] Compiling ${INPUT_FILE} for backend=${BACKEND} (emit: ${EMIT_TYPE})"
+        "${BUILD_DIR}/tools/iree-compile" \
+            --iree-hal-target-backends="${BACKEND}" \
+            ${EMIT_FLAGS} \
+            "${INPUT_FILE}"
+        [ -n "${OUTPUT_FILE:-}" ] && echo "[iree-helper] Output: ${OUTPUT_FILE}"
+        ;;
+
+    run)
+        if [ -z "${1:-}" ]; then
+            echo "[iree-helper] Error: Missing .vmfb file argument for 'run' command."
+            print_usage
+            exit 1
+        fi
+        MODULE_FILE=$1
+        FUNCTION=${2:-}
+        shift; shift 2>/dev/null || true
+        EXTRA_ARGS="$@"
+
+        FUNCTION_FLAG=""
+        [ -n "$FUNCTION" ] && FUNCTION_FLAG="--function=${FUNCTION}"
+
+        echo "[iree-helper] Running module ${MODULE_FILE}${FUNCTION:+ (function: ${FUNCTION})}"
+        "${BUILD_DIR}/tools/iree-run-module" \
+            --module="${MODULE_FILE}" \
+            ${FUNCTION_FLAG} \
+            ${EXTRA_ARGS}
+        ;;
+
+    run-mlir)
+        if [ -z "${1:-}" ]; then
+            echo "[iree-helper] Error: Missing file argument for 'run-mlir' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        BACKEND=${2:-llvm-cpu}
+
+        echo "[iree-helper] Compiling and running ${INPUT_FILE} (backend=${BACKEND})"
+        "${BUILD_DIR}/tools/iree-run-mlir" \
+            --iree-hal-target-backends="${BACKEND}" \
+            "${INPUT_FILE}"
+        ;;
+
+    opt)
+        if [ -z "${1:-}" ]; then
+            echo "[iree-helper] Error: Missing file argument for 'opt' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        PASSES=${2:-}
+        EMIT_TYPE=${3:-stdout}
+
+        PASS_FLAGS=""
+        [ -n "$PASSES" ] && PASS_FLAGS="--pass-pipeline=builtin.module(${PASSES})"
+
+        case "$EMIT_TYPE" in
+            mlir)   EMIT_FLAGS="-o ${INPUT_FILE%.*}.opt.mlir" ;;
+            stdout) EMIT_FLAGS="-o -" ;;
+            none)   EMIT_FLAGS="-o /dev/null" ;;
+            *)
+                echo "[iree-helper] Warning: Unknown emit type '${EMIT_TYPE}'. Defaulting to stdout."
+                EMIT_FLAGS="-o -"
+                ;;
+        esac
+
+        echo "[iree-helper] Running iree-opt on ${INPUT_FILE} (emit: ${EMIT_TYPE})"
+        "${BUILD_DIR}/tools/iree-opt" \
+            ${PASS_FLAGS} \
+            --mlir-print-debuginfo \
+            --mlir-timing \
+            ${EMIT_FLAGS} \
+            "${INPUT_FILE}"
+        ;;
+
+    benchmark)
+        if [ -z "${1:-}" ]; then
+            echo "[iree-helper] Error: Missing .vmfb file argument for 'benchmark' command."
+            print_usage
+            exit 1
+        fi
+        MODULE_FILE=$1
+        FUNCTION=${2:-}
+
+        FUNCTION_FLAG=""
+        [ -n "$FUNCTION" ] && FUNCTION_FLAG="--function=${FUNCTION}"
+
+        echo "[iree-helper] Benchmarking module ${MODULE_FILE}${FUNCTION:+ (function: ${FUNCTION})}"
+        "${BUILD_DIR}/tools/iree-benchmark-module" \
+            --module="${MODULE_FILE}" \
+            ${FUNCTION_FLAG}
+        ;;
+
+    test)
+        if [ -z "${1:-}" ]; then
+            echo "[iree-helper] Error: Missing path argument for 'test' command."
+            print_usage
+            exit 1
+        fi
+        echo "[iree-helper] Running lit tests"
+        PATH="${TEST_TOOL_PATH}:${PATH}" ${LIT_COMMAND} -a -s -v "${1}"
+        ;;
+
+    check)
+        # No per-file targeting here on purpose (use 'test' for that): 'check' is
+        # always a whole-suite (or whole-category) run, mirroring `ninja check-mlir`.
+        case "${1:-}" in
+            --unit)
+                # Everything except e2e/check-test: lit-test (compiler IR checks) + plain gtest binaries.
+                echo "[iree-helper] Running unit tests (lit-test + gtest, excluding e2e check-test) with -j${CTEST_JOBS}"
+                ctest --test-dir "${BUILD_DIR}" -LE "test-type=check-test" -j "${CTEST_JOBS}" --output-on-failure
+                ;;
+            --e2e)
+                # Compile-and-run tests executed against a real HAL driver.
+                echo "[iree-helper] Running e2e/integration tests (test-type=check-test) with -j${CTEST_JOBS}"
+                ctest --test-dir "${BUILD_DIR}" -L "test-type=check-test" -j "${CTEST_JOBS}" --output-on-failure
+                ;;
+            "")
+                echo "[iree-helper] Running full ctest suite with -j${CTEST_JOBS}"
+                ctest --test-dir "${BUILD_DIR}" -j "${CTEST_JOBS}" --output-on-failure
+                ;;
+            *)
+                echo "[iree-helper] Error: 'check' does not take a file or regex (that's what 'test' is for)."
+                echo "[iree-helper] Usage: iree-helper check [--unit|--e2e]"
+                echo "[iree-helper] For a single file: iree-helper test <file>"
+                exit 1
+                ;;
+        esac
+        ;;
+
+    ctest)
+        FILTER=${1:-}
+        echo "[iree-helper] Running ctest${FILTER:+ (filter: ${FILTER})} with -j${CTEST_JOBS}"
+        if [ -n "$FILTER" ]; then
+            ctest --test-dir "${BUILD_DIR}" -R "${FILTER}" -j "${CTEST_JOBS}"
+        else
+            ctest --test-dir "${BUILD_DIR}" -j "${CTEST_JOBS}"
+        fi
+        ;;
+
+    update-test-checks)
+        if [ -z "${1:-}" ]; then
+            echo "[iree-helper] Error: Missing input file for 'update-test-checks' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        echo "[iree-helper] Updating FileCheck patterns in ${INPUT_FILE}"
+        python3 "${REPO_ROOT}/llvm-external-projects/iree-dialects/python/iree/tools/update_mlir_test_checks.py" \
+            --opt-binary="${BUILD_DIR}/tools/iree-opt" \
+            "${INPUT_FILE}" 2>/dev/null || \
+        python3 "${REPO_ROOT}/third_party/llvm-project/mlir/utils/update_test_checks.py" \
+            --opt-binary="${BUILD_DIR}/tools/iree-opt" \
+            "${INPUT_FILE}"
+        ;;
+
+    check-clang-format)
+        CLANG_FORMAT_COMMIT=${1:-$CLANG_FORMAT_COMMIT}
+        echo "[iree-helper] Checking clang-format against git commit ${CLANG_FORMAT_COMMIT}"
+        format_diff=$(git clang-format --diff ${CLANG_FORMAT_COMMIT} 2>&1)
+        echo "$format_diff"
+        if echo "$format_diff" | grep -q "^[-+]"; then
+            exit 1
+        fi
+        ;;
+
+    clang-format)
+        CLANG_FORMAT_COMMIT=${1:-$CLANG_FORMAT_COMMIT}
+        echo "[iree-helper] Running clang-format against git commit ${CLANG_FORMAT_COMMIT}"
+        git clang-format ${CLANG_FORMAT_COMMIT}
+        ;;
+
+    clang-tidy)
+        CLANG_TIDY_COMMIT=${1:-$CLANG_TIDY_COMMIT}
+        echo "[iree-helper] Running clang-tidy against git commit ${CLANG_TIDY_COMMIT}"
+        CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR ${CLANG_TIDY_COMMIT} | grep -E '\.(c|cc|cpp|cxx)$' || true)
+        if [ -z "$CHANGED_FILES" ]; then
+            echo "[iree-helper] No C/C++ files changed compared to ${CLANG_TIDY_COMMIT}. Skipping clang-tidy."
+            exit 0
+        fi
+        echo "[iree-helper] Running clang-tidy on:"
+        echo "$CHANGED_FILES"
+        clang-tidy $CHANGED_FILES -p "${BUILD_DIR}" --header-filter='.*' --warnings-as-errors='*'
+        ;;
+
+    create-clangd)
+        echo "[iree-helper] Creating .clangd configuration file"
+        cat > .clangd <<EOL
+CompileFlags:
+  CompilationDatabase: ${BUILD_DIR}/
+EOL
+        echo "[iree-helper] .clangd file created with compilation database path: ${BUILD_DIR}/"
+        ;;
+
+    show-config)
+        echo "[iree-helper] Current configuration:"
+        echo "[iree-helper] REPO_ROOT:            ${REPO_ROOT}"
+        echo "[iree-helper] BUILD_DIR:             ${BUILD_DIR}"
+        echo "[iree-helper] LIT_COMMAND:           ${LIT_COMMAND}"
+        echo "[iree-helper] TEST_TOOL_PATH:        ${TEST_TOOL_PATH}"
+        echo "[iree-helper] CTEST_JOBS:            ${CTEST_JOBS}"
+        echo "[iree-helper] CLANG_FORMAT_COMMIT:   ${CLANG_FORMAT_COMMIT}"
+        echo "[iree-helper] CLANG_TIDY_COMMIT:     ${CLANG_TIDY_COMMIT}"
+        echo "[iree-helper] iree-compile:          ${BUILD_DIR}/tools/iree-compile"
+        echo "[iree-helper] iree-opt:              ${BUILD_DIR}/tools/iree-opt"
+        echo "[iree-helper] iree-run-module:       ${BUILD_DIR}/tools/iree-run-module"
+        echo "[iree-helper] iree-benchmark-module: ${BUILD_DIR}/tools/iree-benchmark-module"
+        ;;
+
+    clean)
+        echo "[iree-helper] Cleaning build directory"
+        rm -rf "${BUILD_DIR}"
+        ;;
+
+    help|*)
+        print_usage
+        ;;
+esac
+
+echo "[iree-helper] Done."

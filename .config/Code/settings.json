@@ -9,7 +9,7 @@
     // Inline suggest is used to show code completion suggestions in the editor
     "editor.inlineSuggest.enabled": true,
     // Set font size
-    "editor.fontFamily": "Monaco", // DEFAULT: Menlo
+    "editor.fontFamily": "Monaco", // DEFAULT: Menlo, ALTERNATIVE: Monaco
     // Relative line numbers
     "editor.lineNumbers": "relative",
     // Set the line height 
@@ -165,5 +165,7 @@
     "terminal.integrated.smoothScrolling": true,
     "editor.cursorSmoothCaretAnimation": "on",
     "chat.viewSessions.orientation": "stacked",
+    "git.blame.editorDecoration.enabled": false,
+    "workbench.colorTheme": "Nord",
 
 }
