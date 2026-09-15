@@ -23,6 +23,10 @@ TEST_TOOL_PATH="${BUILD_DIR}/llvm-project/bin:${BUILD_DIR}/tools"
 
 # ctest runs tests single-threaded unless told otherwise.
 CTEST_JOBS=${CTEST_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 1)}
+# Set to non-empty (e.g. ASAN=ON) to enable AddressSanitizer. Defaults to
+# RelWithDebInfo build type; for readable stack traces use Debug or RelWithDebInfo:
+#   ASAN=ON iree-helper config {Debug|RelWithDebInfo}
+ASAN=${ASAN:-}
 
 # --- Helper Functions ---
 print_usage() {
@@ -63,7 +67,9 @@ print_usage() {
     echo "  REPO_ROOT    Path to the IREE repo root (default: ~/thirdparty/iree)"
     echo "  BUILD_DIR    Path to the build directory (default: <parent-of-REPO_ROOT>/iree-build)"
     echo "  LIT_COMMAND  Command to run lit tests (default: \$BUILD_DIR/bin/llvm-lit)"
-    echo "  CTEST_JOBS   Parallel jobs for check/ctest (default: number of CPU cores)"
+    echo "  CTEST_JOBS   Parallel jobs for check/ctest (default: number of CPU cores)
+  ASAN         Enable AddressSanitizer (default: unset, builds in RelWithDebInfo).
+               For readable stack traces: ASAN=ON $0 config {Debug|RelWithDebInfo}"
     echo ""
     echo "Options:"
     echo "  BUILD_TYPE   Build type for configuration (e.g., Debug, RelWithDebInfo). Default is RelWithDebInfo."
@@ -89,7 +95,9 @@ shift
 case $COMMAND in
     config)
         BUILD_TYPE=${1:-RelWithDebInfo}
-        echo "[iree-helper] Configuring IREE project (BUILD_TYPE=${BUILD_TYPE})"
+        ASAN_FLAGS=()
+        [ -n "${ASAN}" ] && ASAN_FLAGS=(-DIREE_ENABLE_ASAN=ON)
+        echo "[iree-helper] Configuring IREE project (BUILD_TYPE=${BUILD_TYPE}${ASAN:+, ASAN=ON})"
         cmake -G Ninja \
             -S "${REPO_ROOT}" \
             -B "${BUILD_DIR}" \
@@ -100,7 +108,8 @@ case $COMMAND in
             -DCMAKE_CXX_COMPILER=clang++ \
             -DIREE_ENABLE_LLD=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            "${ASAN_FLAGS[@]}"
         ;;
 
     build)
@@ -417,6 +426,7 @@ EOL
         echo "[iree-helper] CTEST_JOBS:            ${CTEST_JOBS}"
         echo "[iree-helper] CLANG_FORMAT_COMMIT:   ${CLANG_FORMAT_COMMIT}"
         echo "[iree-helper] CLANG_TIDY_COMMIT:     ${CLANG_TIDY_COMMIT}"
+        echo "[iree-helper] ASAN:                 ${ASAN:-OFF}"
         echo "[iree-helper] iree-compile:          ${BUILD_DIR}/tools/iree-compile"
         echo "[iree-helper] iree-opt:              ${BUILD_DIR}/tools/iree-opt"
         echo "[iree-helper] iree-run-module:       ${BUILD_DIR}/tools/iree-run-module"

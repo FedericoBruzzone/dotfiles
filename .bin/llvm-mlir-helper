@@ -17,6 +17,10 @@ BUILD_DIR=${BUILD_DIR:-${REPO_ROOT}/build}
 # `cmake -S llvm -B build -DARM_EMULATOR_EXECUTABLE=env`
 # `cmake -S llvm -B build -DARM_EMULATOR_EXECUTABLE=`
 ARM_EMULATOR_EXECUTABLE=${ARM_EMULATOR_EXECUTABLE:-}
+# Set to non-empty (e.g. ASAN=ON) to enable AddressSanitizer. Defaults to
+# Release build type; for readable stack traces use Debug or RelWithDebInfo:
+#   ASAN=ON llvm-mlir-helper config {Debug|RelWithDebInfo}
+ASAN=${ASAN:-}
 
 # --- Helper Functions ---
 print_usage() {
@@ -52,6 +56,8 @@ print_usage() {
     echo "  ARM_EMULATOR_EXECUTABLE Emulator for AArch64 integration tests (default: unset)."
     echo "                          Unset: native SME/I8MM detection, clean pass/skip/xfail results."
     echo "                          Set to 'env' only for emulator-only tests (e.g. SVE, VL-forcing SME)."
+    echo "  ASAN                    Enable AddressSanitizer (default: unset, builds in Release)."
+    echo "                          For readable stack traces: ASAN=ON $0 config {Debug|RelWithDebInfo}"
     echo ""
     echo "Options:"
     echo "  BUILD_TYPE  Build type for configuration (e.g., Debug, Release). Default is Release."
@@ -84,7 +90,9 @@ shift
 case $COMMAND in
     config)
         BUILD_TYPE=${1:-Release}
-        echo "--- Configuring project (mlir+clang, BUILD_TYPE=${BUILD_TYPE}) ---"
+        ASAN_FLAGS=()
+        [ -n "${ASAN}" ] && ASAN_FLAGS=(-DLLVM_USE_SANITIZER=Address)
+        echo "--- Configuring project (mlir+clang, BUILD_TYPE=${BUILD_TYPE}${ASAN:+, ASAN=ON}) ---"
         cmake -G Ninja \
             -S "${REPO_ROOT}/llvm" \
             -B "${BUILD_DIR}" \
@@ -102,7 +110,8 @@ case $COMMAND in
             -DCMAKE_C_COMPILER=/usr/bin/clang \
             -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
             -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path) \
-            -DLLVM_CCACHE_BUILD=ON
+            -DLLVM_CCACHE_BUILD=ON \
+            "${ASAN_FLAGS[@]}"
         ;;
 
     build)
