@@ -181,5 +181,8 @@
     "chat.viewSessions.orientation": "stacked",
     "git.blame.editorDecoration.enabled": false,
     "workbench.experimental.modernUI": true,
-    "workbench.colorTheme": "Solarized Light",
+    "git.blame.statusBarItem.enabled": true,
+    "diffEditor.ignoreTrimWhitespace": true,
+    "diffEditor.renderSideBySide": true,
+    "diffEditor.useInlineViewWhenSpaceIsLimited": true,
 }

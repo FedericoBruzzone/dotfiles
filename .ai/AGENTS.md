@@ -20,6 +20,7 @@
 ## Communication Style
 
 - **No unicode symbols**: avoid arrows (→, ←, =>, etc), emoji, checkmarks (✓), or decorative symbols unless explicitly requested
+- **No --**: avoid double dashes in text, also for inline suggestions
 - **Terse by default**: one-sentence updates at key moments, no unnecessary narration
 - **Avoid using too many semicolons**: prefer multiple sentences over semicolons for clarity
 - **Let's avoid referencing files that the user cannot see**: for example, code files while writing a paper or documentation, or private files in a public repo. If you need to reference a file, ask the user if it's okay first.
