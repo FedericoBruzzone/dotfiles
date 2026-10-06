@@ -1,9 +1,6 @@
 local keymap = vim.keymap.set
 local s = { silent = true }
 
--- Multicursor VS Code-like: primo press seleziona la parola, press successivi aggiungono la prossima occorrenza
-keymap("n", "<C-d>", "viw",  { noremap = true, silent = true, desc = "Multicursor: select current word" })
-keymap("x", "<C-d>", "Q",    { remap = true,   silent = true, desc = "Multicursor: add next match" })
 
 vim.g.mapleader = " "
 keymap("n", "<space>", "<Nop>")
@@ -41,7 +38,11 @@ local function toggle_background()
 end
 keymap("n", "<leader>cb", toggle_background)
 
-
+function insertFullPath()
+  local filepath = vim.fn.expand('%')
+  vim.fn.setreg('+', filepath) -- write to clippoard
+end
+vim.keymap.set('n', '<leader>pc', insertFullPath, { noremap = true, silent = true })
 
 -- keymap("n", "j", function()
 --     return tonumber(vim.api.nvim_get_vvar("count")) > 0 and "j" or "gj"

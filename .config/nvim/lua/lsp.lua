@@ -28,19 +28,19 @@ vim.api.nvim_create_autocmd('LspAttach', {
         map({ 'n', 'x' }, '<D-S-i>', function() vim.lsp.buf.format({ async = true }) end)
         map('n', '<D-.>', vim.lsp.buf.code_action)
 
-        local excluded_filetypes = {} -- c = true, cpp = true }
-        if not client:supports_method('textDocument/willSaveWaitUntil')
-            and client:supports_method('textDocument/formatting')
-            and not excluded_filetypes[vim.bo[buf].filetype]
-        then
-            vim.api.nvim_create_autocmd('BufWritePre', {
-                group = vim.api.nvim_create_augroup('my.lsp.format', { clear = false }),
-                buffer = buf,
-                callback = function()
-                    vim.lsp.buf.format({ bufnr = buf, id = client.id, timeout_ms = 1000 })
-                end,
-            })
-        end
+        -- local excluded_filetypes = {} -- c = true, cpp = true }
+        -- if not client:supports_method('textDocument/willSaveWaitUntil')
+        --     and client:supports_method('textDocument/formatting')
+        --     and not excluded_filetypes[vim.bo[buf].filetype]
+        -- then
+        --     vim.api.nvim_create_autocmd('BufWritePre', {
+        --         group = vim.api.nvim_create_augroup('my.lsp.format', { clear = false }),
+        --         buffer = buf,
+        --         callback = function()
+        --             vim.lsp.buf.format({ bufnr = buf, id = client.id, timeout_ms = 1000 })
+        --         end,
+        --     })
+        -- end
     end,
 })
 

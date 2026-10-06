@@ -24,6 +24,6 @@ opt.undodir = os.getenv('HOME') .. '/.vim/undodir' -- Directory for undo files
 opt.undofile = true -- Enable persistent undo
 opt.completeopt = { "menuone", "popup", "noinsert" } -- Options for completion menu
 opt.winborder = "rounded" -- Use rounded borders for windows
--- opt.hlsearch = false -- Disable highlighting of search results
+opt.hlsearch = false -- Disable highlighting of search results
 
 vim.cmd.filetype("plugin indent on") -- Enable filetype detection, plugins, and indentation

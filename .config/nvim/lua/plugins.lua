@@ -12,6 +12,7 @@ vim.pack.add({
     { src = "https://github.com/sindrets/diffview.nvim" },
     { src = "https://github.com/pwntester/octo.nvim" },
     { src = "https://github.com/linrongbin16/gitlinker.nvim" },
+    { src = "https://github.com/hat0uma/csvview.nvim" },
     { src = "https://github.com/akinsho/bufferline.nvim" },
     { src = "https://github.com/nvim-lualine/lualine.nvim" },
     { src = "https://github.com/AlexvZyl/nordic.nvim" }
@@ -27,6 +28,22 @@ require('neogit').setup({ integrations = { diffview = true, telescope = true } }
 require('diffview').setup({})
 require('octo').setup({ picker = "telescope", enable_builtin = true })
 require('gitlinker').setup()
+require('csvview').setup({
+    parser = { comments = { "#", "//" } },
+    view = { display_mode = "border" },
+    keymaps = {
+        textobject_field_inner = { "if", mode = { "o", "x" } },
+        textobject_field_outer = { "af", mode = { "o", "x" } },
+        jump_next_field_end = { "<Tab>", mode = { "n", "v" } },
+        jump_prev_field_end = { "<S-Tab>", mode = { "n", "v" } },
+        jump_next_row = { "<Enter>", mode = { "n", "v" } },
+        jump_prev_row = { "<S-Enter>", mode = { "n", "v" } },
+    },
+})
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = "csv",
+    callback = function() require('csvview').enable() end,
+})
 require("bufferline").setup({})
 require("lualine").setup({})
 
@@ -133,13 +150,13 @@ vim.keymap.set('n', '<leader>fg', builtin.git_files, {})
 vim.keymap.set('n', '<leader>gb', builtin.git_branches, { desc = "Git branches" })
 vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
 vim.keymap.set('n', '<leader>fh', builtin.help_tags, {})
-vim.keymap.set('n', '<leader>f.', function() builtin.find_files({ cwd = vim.fn.expand("%:p:h") }) end,
-    { desc = "Find files in current file's dir" })
-vim.keymap.set('n', '<leader>l.', function() builtin.live_grep({ search_dirs = { vim.fn.expand("%:p:h") } }) end,
-    { desc = "Grep in current file's dir" })
 vim.keymap.set('n', '<leader>fd',
     function() builtin.find_files({ cwd = vim.fn.input("Dir: ", vim.fn.getcwd(), "dir") }) end,
     { desc = "Find files in prompted dir" })
 vim.keymap.set('n', '<leader>ld',
     function() builtin.live_grep({ search_dirs = { vim.fn.input("Dir: ", vim.fn.getcwd(), "dir") } }) end,
     { desc = "Grep in prompted dir" })
+-- vim.keymap.set('n', '<leader>f.', function() builtin.find_files({ cwd = vim.fn.expand("%:p:h") }) end,
+--     { desc = "Find files in current file's dir" })
+-- vim.keymap.set('n', '<leader>l.', function() builtin.live_grep({ search_dirs = { vim.fn.expand("%:p:h") } }) end,
+--     { desc = "Grep in current file's dir" })
