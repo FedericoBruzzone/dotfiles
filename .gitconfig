@@ -14,9 +14,12 @@
     co = checkout
     br = branch
     r = rebase
+    prinfo = "!f() { b=$(git branch --show-current); m=$(git config branch.$b.merge); echo \"$(git config branch.$b.remote) ${m#refs/heads/}\"; }; f" # prinfo = rev-parse --abbrev-ref @{upstream}
+    prnum = "!f() { git ls-remote ${1:-upstream} 'refs/pull/*/head' | grep $(git rev-parse HEAD); }; f"
+    prbranches = "!git for-each-ref --format='%(refname:short)' refs/heads | while read b; do echo \"$b $(git config branch.$b.remote) $(git config branch.$b.merge)\"; done"
 
 [core]
-    editor = vim ; nvim
+    editor = nvim ; vim
     excludesfile = ~/.gitignore_global
 [difftool]
     prompt = true
