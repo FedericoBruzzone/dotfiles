@@ -42,6 +42,7 @@ print_usage() {
     echo "  emit-llvm <file.c> [LEVEL]                     Generate LLVM IR from a C file."
     echo "  llvm-compile <file.ll> [OUT] [LLC_OPT]         Compile LLVM IR to an executable via llc+clang."
     echo "  clang-link <file.ll> [OUT] [OPT_LEVEL]         Compile LLVM IR directly with clang (no llc step)."
+    echo "  asm <file> [CPU] [LLC_OPT] [EMIT]              Show the assembly of a .mlir, .ll or .bc file (a .mlir is lowered to the LLVM dialect first)."
     echo "  check-mlir                                     Run check-mlir."
     echo "  check-llvm                                     Run check-llvm."
     echo "  check-llvm-unit                                Run check-llvm-unit."
@@ -66,6 +67,13 @@ print_usage() {
     echo "  EMIT        Type of output to emit: none, mlir/llvm, bc, stdout. Default is stdout."
     echo "  PASS        If given, restrict debug output to this pass name. Default is all passes."
     echo "  TARGET      Translation target: llvm-ir, llvm-bc. Default is llvm-ir."
+    echo "  CPU         llc -mcpu for 'asm', e.g. apple-m4, neoverse-n1. Default is native."
+    echo "  EMIT (asm)  stdout (default, header on stderr), file (writes <file>.s), none."
+    echo "  LLC_FLAGS   Extra flags for llc in 'asm', e.g. LLC_FLAGS='-mattr=+sve' (environment)."
+    echo "  LOWER       For 'asm' on a .mlir: auto (default, lower when it holds func/arith/scf/vector/memref/... ops), yes, no."
+    echo "  SCHEDULE    For 'asm' on a .mlir: a transform-dialect schedule file applied before the lowering."
+    echo "              Not needed when the .mlir holds its own transform.named_sequence (applied automatically)."
+    echo "              Without a schedule, linalg/tensor ops become scalar loops."
 }
 
 # Dispatch helper: decide which toolchain a file belongs to, by extension.
@@ -460,6 +468,91 @@ case $COMMAND in
 
         echo "--- Compiling ${INPUT_FILE} to executable ${OUT_NAME} (${OPT_LEVEL}) ---"
         ${BUILD_DIR}/bin/clang ${OPT_LEVEL} "${INPUT_FILE}" -o "${OUT_NAME}" ${SYSROOT}
+        ;;
+
+    asm)
+        if [ -z "${1:-}" ]; then
+            echo "Error: Missing input file for 'asm' command."
+            print_usage
+            exit 1
+        fi
+        INPUT_FILE=$1
+        CPU=${2:-native}
+        LLC_OPT=${3:--O3}
+        EMIT_TYPE=${4:-stdout}
+        LANG=$(detect_lang "${INPUT_FILE}")
+
+        case "$EMIT_TYPE" in
+            stdout) OUT_FLAGS="-o -" ;;
+            file)   OUT_FLAGS="-o ${INPUT_FILE%.*}.s" ;;
+            none)   OUT_FLAGS="-o /dev/null" ;;
+            *)
+                echo "Warning: Unknown emit type '$EMIT_TYPE'. Defaulting to stdout." >&2
+                EMIT_TYPE=stdout
+                OUT_FLAGS="-o -"
+                ;;
+        esac
+
+        # With stdout the assembly is the only thing on stdout, so it can be piped or redirected.
+        HEADER_FD=1
+        [ "$EMIT_TYPE" = "stdout" ] && HEADER_FD=2
+        echo "--- Assembly of ${INPUT_FILE} (-mcpu=${CPU} ${LLC_OPT}, Emit: ${EMIT_TYPE}) ---" >&"$HEADER_FD"
+
+        case "$LANG" in
+            mlir)
+                # mlir-translate only knows the LLVM dialect, so anything with func/arith/scf/vector/
+                # memref/... ops goes through the same lowering as the matmul-study pipelines first.
+                # A module that is already in the LLVM dialect is not touched (LOWER=no forces that).
+                # SCHEDULE=<file.mlir>: a transform-dialect schedule applied before the lowering,
+                #   e.g. to turn a linalg.matmul into the vectorized micro-kernel.
+                # Without SCHEDULE, linalg/tensor ops are only bufferized and turned into scalar loops.
+                LOWER=${LOWER:-auto}
+                NEED_LOWER=0
+                if [ "$LOWER" = "yes" ] || [ -n "${SCHEDULE:-}" ] || grep -q 'transform\.named_sequence' "${INPUT_FILE}"; then
+                    NEED_LOWER=1
+                elif [ "$LOWER" = "auto" ] && \
+                     grep -qE '\b(func|arith|scf|cf|vector|memref|linalg|tensor|affine|math|ub|index)\.[a-z_]+' "${INPUT_FILE}"; then
+                    NEED_LOWER=1
+                fi
+                if [ "$NEED_LOWER" = "1" ]; then
+                    STAGE0=("${BUILD_DIR}/bin/mlir-opt" "${INPUT_FILE}")
+                    if [ -n "${SCHEDULE:-}" ]; then
+                        echo "(applying the schedule ${SCHEDULE}, then lowering to the LLVM dialect)" >&"$HEADER_FD"
+                        STAGE0+=("--transform-preload-library=transform-library-paths=${SCHEDULE}" --transform-interpreter)
+                    elif grep -q 'transform\.named_sequence' "${INPUT_FILE}"; then
+                        echo "(the file has its own schedule: applying it, then lowering to the LLVM dialect)" >&"$HEADER_FD"
+                        STAGE0+=(--transform-interpreter --test-transform-dialect-erase-schedule)
+                    elif grep -qE '\b(linalg|tensor)\.[a-z_]+' "${INPUT_FILE}"; then
+                        echo "(linalg/tensor ops: bufferizing and lowering to scalar loops, no vectorization; use SCHEDULE=<file> for a vectorized kernel)" >&"$HEADER_FD"
+                        STAGE0+=("--one-shot-bufferize=bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map" --convert-linalg-to-loops)
+                    else
+                        echo "(lowering to the LLVM dialect first)" >&"$HEADER_FD"
+                    fi
+                    "${STAGE0[@]}" | \
+                    ${BUILD_DIR}/bin/mlir-opt - \
+                        --lower-vector-mask --expand-strided-metadata --lower-affine \
+                        "--convert-vector-to-scf=target-rank=1 full-unroll=true" --lower-affine \
+                        "--convert-vector-to-llvm=vector-contract-lowering=outerproduct" \
+                        --convert-scf-to-cf --convert-cf-to-llvm --convert-arith-to-llvm \
+                        --convert-math-to-llvm "--convert-func-to-llvm=use-bare-ptr-memref-call-conv=1" \
+                        --finalize-memref-to-llvm --convert-index-to-llvm --convert-ub-to-llvm \
+                        --reconcile-unrealized-casts | \
+                        ${BUILD_DIR}/bin/mlir-translate --mlir-to-llvmir | \
+                        ${BUILD_DIR}/bin/llc ${LLC_OPT} -mcpu="${CPU}" ${LLC_FLAGS:-} ${OUT_FLAGS}
+                else
+                    ${BUILD_DIR}/bin/mlir-translate --mlir-to-llvmir "${INPUT_FILE}" | \
+                        ${BUILD_DIR}/bin/llc ${LLC_OPT} -mcpu="${CPU}" ${LLC_FLAGS:-} ${OUT_FLAGS}
+                fi
+                ;;
+            llvm)
+                ${BUILD_DIR}/bin/llc ${LLC_OPT} -mcpu="${CPU}" ${LLC_FLAGS:-} ${OUT_FLAGS} "${INPUT_FILE}"
+                ;;
+            *)
+                echo "Error: Cannot determine toolchain for '${INPUT_FILE}' (expected .mlir, .ll, or .bc)."
+                exit 1
+                ;;
+        esac
+        [ "$EMIT_TYPE" = "stdout" ] && exit 0
         ;;
 
     check-mlir)
