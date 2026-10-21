@@ -25,5 +25,7 @@ opt.undofile = true -- Enable persistent undo
 opt.completeopt = { "menuone", "popup", "noinsert" } -- Options for completion menu
 opt.winborder = "rounded" -- Use rounded borders for windows
 opt.hlsearch = false -- Disable highlighting of search results
+vim.opt.splitbelow = true -- Open new horizontal splits below the current window
+vim.opt.splitright = true -- Open new vertical splits to the right of the current window
 
 vim.cmd.filetype("plugin indent on") -- Enable filetype detection, plugins, and indentation

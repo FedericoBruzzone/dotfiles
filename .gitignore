@@ -60,6 +60,9 @@ tags
 .claude/telemetry/
 .claude/plugins/
 .claude/.last-cleanup
+.claude/daemon.log
+.claude/daemon/
+.claude/jobs/
 
 # OpenCode metadata (.config/opencode)
 .config/opencode/node_modules/

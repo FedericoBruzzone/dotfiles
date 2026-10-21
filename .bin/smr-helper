@@ -1,0 +1,450 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Configuration ---
+REPO_ROOT=${REPO_ROOT:-~/dev/Source-Matching-and-Rewriting}
+REPO_ROOT=$(cd "${REPO_ROOT/#\~/$HOME}" && pwd -P)
+DOCKER_IMAGE=${DOCKER_IMAGE:-smr-dev}
+# The repo is mounted where the devcontainer mounts it, so the existing
+# build/CMakeCache.txt (CMAKE_HOME_DIRECTORY=/root/smr) stays valid.
+CONTAINER_ROOT=/root/smr
+BUILD_DIR=${BUILD_DIR:-build}
+EXPERIMENTS_DIR=${EXPERIMENTS_DIR:-${BUILD_DIR}/experiments}
+E2E_DIR=${E2E_DIR:-${BUILD_DIR}/e2e}
+E2E_IGNORE=${E2E_IGNORE:-Tempo|[Tt]ime}
+E2E_LIBS=${E2E_LIBS:--lopenblas -lpthread -lm}
+CLANG_FORMAT_COMMIT=HEAD
+
+# FileCheck, llvm-lit and not are only in the ClangIR build tree, not installed.
+CONTAINER_PATH="${CONTAINER_ROOT}/${BUILD_DIR}/smr:${CONTAINER_ROOT}/${BUILD_DIR}/smr-opt"
+CONTAINER_PATH+=":/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+CONTAINER_PATH+=":/opt/llvm-project/build/bin"
+
+# --- Helper Functions ---
+print_usage() {
+    echo "Usage: smr-helper <command> [arguments]"
+    echo ""
+    echo "Every command except the git and format ones runs inside the ${DOCKER_IMAGE} docker image,"
+    echo "with the repo mounted at ${CONTAINER_ROOT}. Run it from anywhere inside the repo:"
+    echo "relative paths are resolved against the current directory."
+    echo ""
+    echo "Docker:"
+    echo "  image-build                              Build the ${DOCKER_IMAGE} image from docker/Dockerfile (hours: builds ClangIR)."
+    echo "  shell                                    Open an interactive shell in the container."
+    echo "  exec <cmd> [args...]                     Run a command in the container (PATH includes smr and FileCheck)."
+    echo ""
+    echo "Submodules:"
+    echo "  sync-submodules                          Sync and check out all submodules at the pinned commits."
+    echo "  update-artifacts                         Move the artifacts submodule to the latest upstream commit."
+    echo ""
+    echo "Build:"
+    echo "  config [BUILD_TYPE]                      Configure the project with CMake."
+    echo "  build [TARGET]                           Build with ninja (default: all)."
+    echo "  rebuild                                  Re-configure and build from scratch."
+    echo "  clean                                    Remove the build directory."
+    echo ""
+    echo "Run:"
+    echo "  smr [args...]                            Run smr."
+    echo "  opt <file.mlir> [PASSES]                 Run smr-opt on a file."
+    echo "  translate <file.mlir> [out.ll]           Lower CIR to LLVM IR with cir-translate."
+    echo ""
+    echo "Test:"
+    echo "  test <folder|file>                       Run lit on a file or folder."
+    echo "  check                                    Run the whole test suite (ninja check-smr)."
+    echo "  e2e <dir> [pat...]                       Compare the binary output of each pat in <dir> against"
+    echo "                                            clang -O0 on the same C file, with timings"
+    echo "                                            (default: every *.pat, e.g. test/e2e/cello)."
+    echo "  regress [REF]                            Run smr from REF and from the working tree on every artifacts"
+    echo "                                            case and diff the MLIR (scripts/regress.sh)."
+    echo "  clean-regress                            Remove the cached REF builds and outputs of regress."
+    echo ""
+    echo "Experiments (run on a copy of the suite under \$EXPERIMENTS_DIR):"
+    echo "  experiment polybench [PAT]               PolyBench/C: speedup and validation (default: suite pat.pat)."
+    echo "  experiment angha-rewrite                 make in every angha_rewrite case."
+    echo "  experiment angha-match [args...]         angha_match/script.py (e.g. --use-pat, --skip-serialize)."
+    echo "  experiments                              List previous experiment runs."
+    echo ""
+    echo "Format:"
+    echo "  check-clang-format [COMMIT]              Check clang-format on changed files against a commit."
+    echo "  clang-format [COMMIT]                    Format changed files against a commit."
+    echo ""
+    echo "  show-config                              Show current configuration."
+    echo "  help                                     Show this help message."
+    echo ""
+    echo "Environment:"
+    echo "  REPO_ROOT        Repo root (default: ~/dev/Source-Matching-and-Rewriting)"
+    echo "  DOCKER_IMAGE     Docker image (default: smr-dev)"
+    echo "  BUILD_DIR        Build directory, relative to REPO_ROOT (default: build)"
+    echo "  JOBS             Parallel jobs passed to regress (default: number of CPUs in the container)"
+    echo "  EXPERIMENTS_DIR  Experiment runs, relative to REPO_ROOT (default: \$BUILD_DIR/experiments)"
+    echo "  E2E_DIR          e2e outputs, relative to REPO_ROOT (default: \$BUILD_DIR/e2e)"
+    echo "  E2E_IGNORE       Regex of output lines ignored by e2e (default: Tempo|[Tt]ime)"
+    echo "  E2E_LIBS         Libraries linked by e2e (default: -lopenblas -lpthread -lm)"
+    echo ""
+    echo "Options:"
+    echo "  BUILD_TYPE       CMake build type (default: RelWithDebInfo)."
+    echo "  PASSES           smr-opt pass flags, e.g. '--smr-unroll=factor=4'."
+    echo "  REF              Git ref to compare against (default: main)."
+    echo ""
+    echo "Location:"
+    echo "  smr-helper is located at: $(realpath "$0")"
+}
+
+log() {
+    echo "[smr-helper] $*"
+}
+
+die() {
+    echo "[smr-helper] Error: $*" >&2
+    exit 1
+}
+
+require_arg() {
+    [ -n "${2:-}" ] || { log "Error: Missing $1."; print_usage; exit 1; }
+}
+
+require_docker() {
+    docker info >/dev/null 2>&1 || die "Docker is not running."
+    docker image inspect "${DOCKER_IMAGE}" >/dev/null 2>&1 ||
+        die "Image '${DOCKER_IMAGE}' not found. Run 'smr-helper image-build' first."
+}
+
+# Container path matching the current directory. The mount only covers the
+# repo, so commands that take files must be run from inside it.
+container_workdir() {
+    local here
+    here=$(pwd -P)
+    case "${here}/" in
+        "${REPO_ROOT}/"*) echo "${CONTAINER_ROOT}${here#${REPO_ROOT}}" ;;
+        *) echo "${CONTAINER_ROOT}" ;;
+    esac
+}
+
+require_inside_repo() {
+    case "$(pwd -P)/" in
+        "${REPO_ROOT}/"*) ;;
+        *) die "Run this command from inside ${REPO_ROOT}: only the repo is mounted in the container." ;;
+    esac
+}
+
+# Run a command (argv) inside the container.
+in_docker() {
+    require_docker
+    local tty=()
+    [ -t 0 ] && [ -t 1 ] && tty=(-it)
+    docker run --rm ${tty[@]+"${tty[@]}"} \
+        -v "${REPO_ROOT}:${CONTAINER_ROOT}" \
+        -w "$(container_workdir)" \
+        -e PATH="${CONTAINER_PATH}" \
+        -e SMR_ROOT="${CONTAINER_ROOT}" \
+        -e BUILD_DIR="${BUILD_DIR}" \
+        ${JOBS:+-e JOBS="${JOBS}"} \
+        "${DOCKER_IMAGE}" "$@"
+}
+
+# Run a bash script string inside the container, with extra positional args.
+in_docker_sh() {
+    local script=$1
+    shift
+    in_docker bash -c "set -euo pipefail; ${script}" smr-helper "$@"
+}
+
+new_experiment_dir() {
+    local name=$1
+    local dir="${EXPERIMENTS_DIR}/$(date +%Y%m%d-%H%M%S)-${name}"
+    mkdir -p "${REPO_ROOT}/${dir}"
+    echo "${dir}"
+}
+
+copy_suite() {
+    local suite=$1 dest=$2
+    [ -d "${REPO_ROOT}/artifacts/${suite}" ] ||
+        die "artifacts/${suite} not found. Run 'smr-helper sync-submodules' first."
+    cp -R "${REPO_ROOT}/artifacts/${suite}/." "${REPO_ROOT}/${dest}/"
+}
+
+# --- Main Script Logic ---
+
+if [ $# -eq 0 ]; then
+    print_usage
+    exit 0
+fi
+
+COMMAND=$1
+shift
+
+case $COMMAND in
+    image-build)
+        log "Building image ${DOCKER_IMAGE} from docker/Dockerfile (this builds ClangIR and takes hours)"
+        docker build -t "${DOCKER_IMAGE}" -f "${REPO_ROOT}/docker/Dockerfile" "${REPO_ROOT}/docker"
+        ;;
+
+    shell)
+        log "Opening a shell in ${DOCKER_IMAGE} (repo at ${CONTAINER_ROOT})"
+        in_docker bash
+        ;;
+
+    exec)
+        require_arg "command for 'exec'" "${1:-}"
+        in_docker "$@"
+        ;;
+
+    sync-submodules)
+        log "Syncing git submodules"
+        git -C "${REPO_ROOT}" submodule sync --recursive
+        git -C "${REPO_ROOT}" submodule update --init --recursive
+        git -C "${REPO_ROOT}" submodule status
+        ;;
+
+    update-artifacts)
+        OLD=$(git -C "${REPO_ROOT}/artifacts" rev-parse HEAD)
+        log "Updating artifacts to the latest upstream commit"
+        git -C "${REPO_ROOT}" submodule update --init --remote artifacts
+        NEW=$(git -C "${REPO_ROOT}/artifacts" rev-parse HEAD)
+        if [ "${OLD}" = "${NEW}" ]; then
+            log "artifacts already up to date (${NEW:0:7})"
+        else
+            git -C "${REPO_ROOT}/artifacts" log --oneline "${OLD}..${NEW}"
+            log "artifacts moved ${OLD:0:7} to ${NEW:0:7}. Commit the bump:"
+            log "  git add artifacts && git commit -m \"Bump artifacts\""
+        fi
+        ;;
+
+    config)
+        BUILD_TYPE=${1:-RelWithDebInfo}
+        log "Configuring (BUILD_TYPE=${BUILD_TYPE}, BUILD_DIR=${BUILD_DIR})"
+        in_docker cmake -G Ninja \
+            -S "${CONTAINER_ROOT}" \
+            -B "${CONTAINER_ROOT}/${BUILD_DIR}" \
+            -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+            -DCMAKE_C_COMPILER=clang-20 \
+            -DCMAKE_CXX_COMPILER=clang++-20 \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        ;;
+
+    build)
+        TARGET=${1:-}
+        [ -f "${REPO_ROOT}/${BUILD_DIR}/build.ninja" ] || "$0" config
+        log "Building target: ${TARGET:-all}"
+        in_docker ninja -C "${CONTAINER_ROOT}/${BUILD_DIR}" ${TARGET:+"${TARGET}"}
+        ;;
+
+    rebuild)
+        log "Rebuilding from scratch"
+        rm -rf "${REPO_ROOT:?}/${BUILD_DIR}"
+        "$0" config
+        "$0" build
+        ;;
+
+    clean)
+        log "Removing ${REPO_ROOT}/${BUILD_DIR}"
+        rm -rf "${REPO_ROOT:?}/${BUILD_DIR}"
+        ;;
+
+    smr)
+        require_inside_repo
+        in_docker smr "$@"
+        ;;
+
+    opt)
+        require_arg "file argument for 'opt'" "${1:-}"
+        require_inside_repo
+        INPUT_FILE=$1
+        shift
+        [ -x "${REPO_ROOT}/${BUILD_DIR}/smr-opt/smr-opt" ] ||
+            die "smr-opt is not built. It comes with the smr-opt branch, then run 'smr-helper build smr-opt'."
+        log "Running smr-opt on ${INPUT_FILE}"
+        in_docker smr-opt "$@" "${INPUT_FILE}"
+        ;;
+
+    translate)
+        require_arg "file argument for 'translate'" "${1:-}"
+        require_inside_repo
+        INPUT_FILE=$1
+        OUTPUT_FILE=${2:-${INPUT_FILE%.*}.ll}
+        log "Lowering ${INPUT_FILE} to ${OUTPUT_FILE}"
+        in_docker cir-translate --cir-to-llvmir "${INPUT_FILE}" -o "${OUTPUT_FILE}"
+        ;;
+
+    test)
+        require_arg "path argument for 'test'" "${1:-}"
+        require_inside_repo
+        [ -f "${REPO_ROOT}/test/lit.cfg.py" ] ||
+            die "No test/lit.cfg.py on this branch (it comes with the lit branch)."
+        # lit needs the path inside the build tree, where lit.site.cfg.py lives.
+        TEST_PATH=$(cd "$(dirname "$1")" && pwd -P)/$(basename "$1")
+        case "${TEST_PATH}" in
+            "${REPO_ROOT}/test"*) TEST_PATH="${CONTAINER_ROOT}/${BUILD_DIR}/test${TEST_PATH#${REPO_ROOT}/test}" ;;
+            *) die "'$1' is not under ${REPO_ROOT}/test." ;;
+        esac
+        log "Running lit on $1"
+        in_docker llvm-lit -sv "${TEST_PATH%/.}"
+        ;;
+
+    check)
+        grep -q "check-smr" "${REPO_ROOT}/${BUILD_DIR}/build.ninja" 2>/dev/null ||
+            die "No check-smr target in ${BUILD_DIR} (it comes with the lit branch, reconfigure after switching)."
+        log "Running check-smr"
+        in_docker ninja -C "${CONTAINER_ROOT}/${BUILD_DIR}" check-smr
+        ;;
+
+    e2e)
+        require_arg "directory argument for 'e2e'" "${1:-}"
+        require_inside_repo
+        DIR=$1
+        shift
+        [ -d "${DIR}" ] || die "'${DIR}' is not a directory."
+        DIR_ABS=$(cd "${DIR}" && pwd -P)
+        C_FILES=$(cd "${DIR_ABS}" && ls *.c 2>/dev/null || true)
+        [ "$(echo "${C_FILES}" | grep -c .)" -eq 1 ] ||
+            die "e2e expects exactly one .c file in ${DIR}, found: ${C_FILES:-none}"
+        PATS=("$@")
+        if [ ${#PATS[@]} -eq 0 ]; then
+            for p in "${DIR_ABS}"/*.pat; do PATS+=("$(basename "$p")"); done
+        fi
+        OUT_DIR="${E2E_DIR}/$(basename "${DIR_ABS}")"
+        mkdir -p "${REPO_ROOT}/${OUT_DIR}"
+        log "e2e on ${DIR} (${C_FILES}) with: ${PATS[*]}"
+        # Runs in the case directory so the pats keep their relative paths.
+        in_docker_sh '
+            OUT=$1; CFILE=$2; IGNORE=$3; LIBS=$4; shift 4
+            STATUS=0
+            clang -O0 "$CFILE" $LIBS -o "$OUT/ref"
+            START=$(date +%s.%N); "$OUT/ref" > "$OUT/ref.out"; END=$(date +%s.%N)
+            REF_TIME=$(awk "BEGIN { printf \"%.3f\", $END - $START }")
+            grep -Ev "$IGNORE" "$OUT/ref.out" > "$OUT/ref.cmp" || true
+            echo "  ref               ${REF_TIME}s"
+            for PAT in "$@"; do
+                NAME=${PAT%.pat}
+                if ! smr "$CFILE" "$PAT" -o "$OUT/$NAME.mlir" > "$OUT/$NAME.smr.log" 2>&1; then
+                    echo "  $NAME  FAIL (smr, see $OUT/$NAME.smr.log)"; STATUS=1; continue
+                fi
+                if ! cir-translate --cir-to-llvmir "$OUT/$NAME.mlir" -o "$OUT/$NAME.ll" 2> "$OUT/$NAME.translate.log"; then
+                    echo "  $NAME  FAIL (cir-translate, see $OUT/$NAME.translate.log)"; STATUS=1; continue
+                fi
+                if ! clang -O0 "$OUT/$NAME.ll" $LIBS -o "$OUT/$NAME.bin" 2> "$OUT/$NAME.link.log"; then
+                    echo "  $NAME  FAIL (link, see $OUT/$NAME.link.log)"; STATUS=1; continue
+                fi
+                START=$(date +%s.%N); "$OUT/$NAME.bin" > "$OUT/$NAME.out"; END=$(date +%s.%N)
+                TIME=$(awk "BEGIN { printf \"%.3f\", $END - $START }")
+                grep -Ev "$IGNORE" "$OUT/$NAME.out" > "$OUT/$NAME.cmp" || true
+                if cmp -s "$OUT/ref.cmp" "$OUT/$NAME.cmp"; then
+                    echo "  $NAME  PASS  ${TIME}s"
+                else
+                    echo "  $NAME  FAIL (output differs: diff $OUT/ref.cmp $OUT/$NAME.cmp)"; STATUS=1
+                fi
+            done
+            exit $STATUS
+        ' "${CONTAINER_ROOT}/${OUT_DIR}" "${C_FILES}" "${E2E_IGNORE}" "${E2E_LIBS}" "${PATS[@]}" &&
+            log "e2e passed, outputs in ${OUT_DIR}" ||
+            die "e2e failed, outputs in ${OUT_DIR}"
+        ;;
+
+    regress)
+        REF=${1:-main}
+        [ -x "${REPO_ROOT}/scripts/regress.sh" ] ||
+            die "No scripts/regress.sh on this branch (it comes with the regress branch)."
+        log "Comparing artifacts MLIR between ${REF} and the working tree"
+        (cd "${REPO_ROOT}" && in_docker scripts/regress.sh "${REF}")
+        ;;
+
+    clean-regress)
+        log "Removing ${REPO_ROOT}/${BUILD_DIR}/regress"
+        rm -rf "${REPO_ROOT:?}/${BUILD_DIR}/regress"
+        ;;
+
+    experiment)
+        require_arg "suite for 'experiment' (polybench, angha-rewrite, angha-match)" "${1:-}"
+        SUITE=$1
+        shift
+        case $SUITE in
+            polybench)
+                PAT=${1:-}
+                RUN=$(new_experiment_dir polybench)
+                copy_suite polybench-c-3.2 "${RUN}"
+                if [ -n "${PAT}" ]; then
+                    [ -f "${PAT}" ] || die "Pattern file '${PAT}' not found."
+                    cp "${PAT}" "${REPO_ROOT}/${RUN}/"
+                    PAT=$(basename "${PAT}")
+                else
+                    PAT=pat.pat
+                fi
+                log "PolyBench/C with ${PAT} in ${RUN}"
+                (cd "${REPO_ROOT}/${RUN}" && in_docker ./test_smr.sh "${PAT}") || true
+                grep -E "Processing|\[RESULT\]|\[ERROR\]" "${REPO_ROOT}/${RUN}/smr_test_log.txt" |
+                    grep -B1 -E "RESULT|ERROR" | grep -v -- "^--$" || log "No kernel was rewritten."
+                log "Full log: ${RUN}/smr_test_log.txt"
+                ;;
+            angha-rewrite)
+                RUN=$(new_experiment_dir angha-rewrite)
+                copy_suite angha_rewrite "${RUN}"
+                log "angha_rewrite in ${RUN}"
+                (cd "${REPO_ROOT}/${RUN}" && in_docker_sh '
+                    STATUS=0
+                    for d in */; do
+                        d=${d%/}
+                        if make -C "$d" > "$d/make.log" 2>&1; then
+                            echo "  $d  OK  $(grep -m1 "Got .* Matches" "$d/make.log" || true)"
+                        else
+                            echo "  $d  FAIL (see $d/make.log)"; STATUS=1
+                        fi
+                    done
+                    exit $STATUS
+                ') || die "Some angha_rewrite cases failed, logs in ${RUN}"
+                ;;
+            angha-match)
+                RUN=$(new_experiment_dir angha-match)
+                copy_suite angha_match "${RUN}"
+                log "angha_match in ${RUN}"
+                (cd "${REPO_ROOT}/${RUN}" && in_docker python3 script.py "$@")
+                log "Per-directory logs in ${RUN}/<dir>/<pattern>.txt"
+                ;;
+            *)
+                die "Unknown suite '${SUITE}' (polybench, angha-rewrite, angha-match)."
+                ;;
+        esac
+        ;;
+
+    experiments)
+        ls -1t "${REPO_ROOT}/${EXPERIMENTS_DIR}" 2>/dev/null || log "No experiments yet."
+        ;;
+
+    check-clang-format)
+        CLANG_FORMAT_COMMIT=${1:-$CLANG_FORMAT_COMMIT}
+        log "Checking clang-format against ${CLANG_FORMAT_COMMIT}"
+        format_diff=$(git -C "${REPO_ROOT}" clang-format --diff "${CLANG_FORMAT_COMMIT}" 2>&1)
+        echo "$format_diff"
+        if echo "$format_diff" | grep -q "^[-+]"; then
+            exit 1
+        fi
+        ;;
+
+    clang-format)
+        CLANG_FORMAT_COMMIT=${1:-$CLANG_FORMAT_COMMIT}
+        log "Running clang-format against ${CLANG_FORMAT_COMMIT}"
+        git -C "${REPO_ROOT}" clang-format "${CLANG_FORMAT_COMMIT}"
+        ;;
+
+    show-config)
+        echo "REPO_ROOT       = ${REPO_ROOT}"
+        echo "DOCKER_IMAGE    = ${DOCKER_IMAGE}"
+        echo "CONTAINER_ROOT  = ${CONTAINER_ROOT}"
+        echo "BUILD_DIR       = ${BUILD_DIR}"
+        echo "EXPERIMENTS_DIR = ${EXPERIMENTS_DIR}"
+        echo "E2E_DIR         = ${E2E_DIR}"
+        echo "E2E_IGNORE      = ${E2E_IGNORE}"
+        echo "E2E_LIBS        = ${E2E_LIBS}"
+        echo "CONTAINER_PATH  = ${CONTAINER_PATH}"
+        echo "artifacts       = $(git -C "${REPO_ROOT}" submodule status artifacts 2>/dev/null || echo 'not initialized')"
+        ;;
+
+    help|-h|--help)
+        print_usage
+        ;;
+
+    *)
+        log "Error: Unknown command '${COMMAND}'"
+        print_usage
+        exit 1
+        ;;
+esac

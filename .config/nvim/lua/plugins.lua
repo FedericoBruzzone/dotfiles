@@ -14,6 +14,7 @@ vim.pack.add({
     { src = "https://github.com/linrongbin16/gitlinker.nvim" },
     { src = "https://github.com/hat0uma/csvview.nvim" },
     { src = "https://github.com/akinsho/bufferline.nvim" },
+    { src = "https://github.com/MeanderingProgrammer/render-markdown.nvim" },
     { src = "https://github.com/nvim-lualine/lualine.nvim" },
     { src = "https://github.com/AlexvZyl/nordic.nvim" }
 })
@@ -26,6 +27,7 @@ require('nordic').load()
 require('trouble').setup({})
 require('neogit').setup({ integrations = { diffview = true, telescope = true } })
 require('diffview').setup({})
+require('render-markdown').setup({})
 require('octo').setup({ picker = "telescope", enable_builtin = true })
 require('gitlinker').setup()
 require('csvview').setup({
@@ -57,6 +59,7 @@ k("n", "<leader>on", "<cmd>Octo notification list<cr>", { desc = "List GitHub No
 k("n", "<leader>os", function()
     require("octo.utils").create_base_search_command({ include_current_repo = true })
 end, { desc = "Search GitHub" })
+
 k("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>", { desc = "Diagnostics (Trouble)" })
 k("n", "<leader>xX", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", { desc = "Buffer Diagnostics (Trouble)" })
 k("n", "<leader>cs", "<cmd>Trouble symbols toggle focus=false win.position=left<cr>", { desc = "Symbols (Trouble)" })
@@ -142,6 +145,7 @@ vim.keymap.set("n", "<leader>n", api.tree.find_file, vim.tbl_extend("force", gop
 vim.keymap.set("n", "<leader>ec", api.tree.collapse_all,
     vim.tbl_extend("force", gopts, { desc = "nvim-tree: Collapse All" }))
 
+-- <C-q> quickfix list
 local builtin = require('telescope.builtin')
 vim.keymap.set('n', '<D-p>', builtin.find_files, {})
 vim.keymap.set('n', '<leader>ff', builtin.find_files, {})

@@ -2,9 +2,10 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
-  "model": "sonnet",
+  "model": "opus",
   "enabledPlugins": {
-    "academic-research-skills@academic-research-skills": true
+    "academic-research-skills@academic-research-skills": true,
+    "humanizer-blader@anthropic-plugin-directory": true
   },
   "extraKnownMarketplaces": {
     "academic-research-skills": {
@@ -12,10 +13,19 @@
         "source": "git",
         "url": "https://github.com/imbad0202/academic-research-skills.git"
       }
+    },
+    "humanizer": {
+      "source": {
+        "source": "github",
+        "repo": "blader/humanizer"
+      }
     }
   },
   "modelSettings": {
     "claude-opus-5-5": {
+      "effortLevel": "high"
+    },
+    "claude-sonnet-5-5": {
       "effortLevel": "high"
     }
   },
