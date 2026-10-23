@@ -16,14 +16,14 @@ vim.pack.add({
     { src = "https://github.com/akinsho/bufferline.nvim" },
     { src = "https://github.com/MeanderingProgrammer/render-markdown.nvim" },
     { src = "https://github.com/nvim-lualine/lualine.nvim" },
-    { src = "https://github.com/AlexvZyl/nordic.nvim" }
+    { src = "https://github.com/projekt0n/github-nvim-theme" }
 })
 
 require('gitsigns').setup({ signcolumn = true })
 require("mason").setup({})
 require("nvim-autopairs").setup({})
 require("auto-session").setup({})
-require('nordic').load()
+require('github-theme').setup({}) vim.cmd('colorscheme github_dark_default')
 require('trouble').setup({})
 require('neogit').setup({ integrations = { diffview = true, telescope = true } })
 require('diffview').setup({})
