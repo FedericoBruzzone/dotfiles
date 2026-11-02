@@ -26,12 +26,35 @@ Review changes for llvm-project. This file is a router. The per-project rules li
 
 If the mode is not clear, assume self-review for a local diff and PR review when a PR number or URL is given.
 
+## Scope of comments
+
+Comment only on what this change introduces. This is the most important rule for keeping the review useful.
+
+A finding is allowed when it is about:
+- a line the diff adds or modifies, or
+- code the change makes wrong, stale, or inconsistent, even if that code is not in the diff: a caller or user that now breaks, a test that no longer covers the behavior, a doc or comment that is now false, a sibling file that must change together with this one (for example the Bazel target for a CMake edit), or an invariant the new code relies on that is not true.
+
+Do not comment on:
+- unchanged lines near the change, including their style, naming, formatting, missing comments, or "while you are here" cleanups
+- pre-existing bugs, smells, or convention violations in code the diff only sits next to, or only moves or renames
+- a convention the new code follows because the surrounding code does the same. Match the neighborhood and do not ask the author to fix the neighborhood
+
+Rules for the details:
+- Before reporting `file:Lnn`, confirm that line is part of the diff (added or modified lines of the PR, or for a local diff the lines in `git diff`). If it is not, either drop the finding or, when it falls under the allowed second case, say in the finding which changed line causes it and name the changed line as the anchor.
+- Read surrounding code to understand a hunk, not to review it. Reading is free, commenting is not.
+- Moved or renamed code: check only that the content is unchanged and the move is justified. Do not review the style of moved lines.
+- A pre-existing problem that the change makes reachable or worse is about the change, so report it as such and explain how.
+- A serious pre-existing bug found by accident (a crash, a miscompile) is the one exception. Mention it once, in a separate line at the end of the report labeled "Out of scope", never as a finding on the PR.
+- Prefer few findings. If there are more than a handful, keep the ones that matter most and drop the rest, instead of listing everything you noticed.
+
 ## Discussion, CI, and issue
 
 In PR review mode this is mandatory and comes before judging the diff. In self-review mode do the same when the branch already has an open PR (`gh pr view` succeeds). Use `--repo llvm/llvm-project` when the current directory is not a clone of it.
 
 **Existing discussion**
-- Read the PR conversation comments, the review summaries and their states (approved, changes requested, commented), the inline review comments, and which review threads are resolved or outdated. Conversation and reviews: `gh pr view <n> --comments` or `--json comments,reviews,reviewDecision`. Inline comments: `gh api repos/<owner>/<repo>/pulls/<n>/comments`. Thread state needs GraphQL: `gh api graphql` with `reviewThreads { isResolved isOutdated }`.
+- Read the PR conversation comments, the review summaries and their states (approved, changes requested, commented), the inline review comments, and which review threads are resolved or outdated. Always query the structured data: `gh pr view <n> --json comments,reviews,reviewDecision`. Inline comments: `gh api repos/<owner>/<repo>/pulls/<n>/comments`. Thread state needs GraphQL: `gh api graphql` with `reviewThreads { isResolved isOutdated }`.
+- Do not trust `gh pr view <n> --comments` alone. It can omit a review that has an empty body, such as a plain approval. `reviewDecision` can also be empty while an approval exists, so an empty value proves nothing. List every entry of `reviews` with its author and state, even when the body is empty, and list the authors of `comments`, marking bots.
+- Never write "no discussion", "no reviews", or "no approvals" unless the `reviews` and `comments` fields were actually empty. State the counts you found, for example "1 review (ftynse, approved, no text), 1 bot comment".
 - Do not repeat a point someone already made. If you agree with an open thread, say so briefly and point to it. If a thread is resolved, check that the code now matches the resolution before dropping the point.
 - Check whether earlier requests were actually addressed in the latest commits. A request that was acknowledged but not done is worth a finding.
 - Note who approved, who asked for changes, and what is still open. A verdict that ignores an unresolved request for changes is wrong.
@@ -66,10 +89,10 @@ Clang and MLIR build on the LLVM rules. When a reference does not mention a topi
 1. Get the diff and the commit message or PR description. For a PR also read the discussion, CI, and linked issue.
 2. Decide whether the change is significant (see Direction and design). If so, do that review first.
 3. Classify touched files with the routing table and read the matching references.
-4. Read the surrounding code for any non-trivial hunk. Do not judge a hunk from the diff alone.
+4. Read the surrounding code for any non-trivial hunk, to understand it. Do not judge a hunk from the diff alone, and do not comment on the surrounding code itself (see Scope of comments).
 5. Search the repository for code the change should reuse, and for duplication it introduces (see Reuse and duplication).
 6. For changes that alter behavior, look for real bugs with `references/correctness.md`. This is where most of the review's value is, so do it before the style checklist.
-7. Review against each reference's checklist, including its TableGen section when `.td` files changed.
+7. Review the changed lines against each reference's checklist, including its TableGen section when `.td` files changed. The checklists apply to what the diff adds, not to the files as a whole.
 8. Report findings, then the checklist table.
 
 ## Direction and design
@@ -100,7 +123,6 @@ Apply this to every change that adds non-trivial logic. Do not rely on the diff:
 - **Placement:** If logic should be shared, where does it belong? In the lowest layer that all users already depend on. Moving code up or adding a dependency from a lower layer to a higher one to enable sharing is a design problem, not a fix.
 - **TableGen:** Repeated records or fields should become a `class`, `multiclass`, or top-level `let`. In ODS, repeated traits or arguments should come from a shared base class, trait, or interface.
 - **Balance:** Do not demand an abstraction for a few similar lines. Ask for extraction when the duplicated logic is non-trivial, already exists elsewhere, or is likely to diverge when fixed in only one place. Also flag the opposite: a new abstraction used once, or a shared helper made so generic that callers get harder to read.
-- **Nearby problems:** An issue that already existed in code the diff only touches is not the author's fault. Report it separately and suggest a follow-up change, not a fix in this one.
 
 Report these as `should fix`, with the path of the existing code, or `question` when unsure whether the existing code fits. A duplication that makes a bug fix incomplete can be a `blocker`.
 
@@ -130,17 +152,23 @@ Report these as `should fix` or `question`. Escalate to a design finding when th
 Findings first, ordered by severity. Each one:
 
 ```
-<file>:L<line> [severity, confidence] <problem>. <why it matters, only if not obvious>. <suggested fix>.
+<file>:L<line> [severity, confidence] <problem, one or two sentences>.
+Why: <only if not obvious>.
+Fix: <suggested fix>.
 ```
+
+Keep each finding short, with the problem, the reason, and the fix on separate lines. Do not write one long paragraph per finding.
 
 Confidence is one of:
 - `verified`: reproduced by running something, or shown by a concrete counterexample or by code you read in the repository. Say which.
 - `likely`: follows from reading the code, but not run or proven.
-- `suspected`: a concern to check. Phrase it as a question.
+- `suspected`: a concern to check. Phrase it as a question. Report it only if you can say how to settle it: a concrete input, a test to add, or a command to run (through the helper), written on a `Check:` line in place of `Fix:`. If you cannot say how to check it, drop it. A vague worry with no way to verify, or a `Fix: no change needed if intended`, is noise.
 
 Never present a `suspected` or `likely` finding as fact, and never present something as upstream policy unless a reference file says so.
 
-Direction and design findings come first and have no line number. Write them as a short paragraph under the heading "Direction and design".
+Every `file:Lnn` must point to a line in the diff, or name a changed line as the anchor (see Scope of comments). Direction and design findings come first and have no line number. Write them as a short paragraph under the heading "Direction and design".
+
+Findings about the PR description, title, commit message, release notes, or other process points are not about a line of code, so they carry no `file:Lnn`. List them under the heading "PR description and process", after the code findings. A finding about a file in the repository (a build file, a test, a doc, a sibling target) is a code finding with `file:Lnn`, even when it is minor. Do not put it in the process section. If a point is about both (for example a rename that needs a note in the description), put it there and mention the code it concerns in the text.
 
 Use full sentences and a short explanation for correctness and design issues. One line is enough for nits. Quote symbols and flags in backticks. Cite the reference rule when it helps the author, for example "per the MLIR pattern rewriting doc".
 
@@ -155,16 +183,23 @@ Then the checklist summary, one row per reference used plus process:
 | Tests | pass / fail / n/a | finding refs |
 | Contribution process | pass / fail / n/a | finding refs |
 
-End with one line: ready, ready after nits, or needs changes.
+End with one verdict line, chosen from the highest severity among the findings:
+- `ready`: no findings, or only `question`.
+- `ready after nits`: only `nit`.
+- `ready after fixes`: at least one `should fix` and no `blocker`.
+- `needs changes`: at least one `blocker`, or an unresolved request for changes from another reviewer.
+
+An approval by someone else does not lower the verdict. Say it next to the verdict instead.
 
 If the helper lacked something the review needed, add a short "Helper gaps" list after that line: what was missing, why it mattered, and a possible subcommand. Leave it out when there are none.
 
 ## Review craft
 
 - Lead with a short summary: what the change does, whether the description matches the diff, the state of the discussion and CI, and the overall verdict.
-- When the change is not obvious at a glance, give an intuitive example in the summary. Use the smallest concrete before and after (a few lines of IR or code, or one sentence of everyday analogy) so the reader gets the idea without opening the diff. Skip it when the change is trivial. The example explains the change and does not replace the findings.
+- Include an intuitive example in the summary for any change that alters behavior in code or IR. Use the smallest concrete before and after (a few lines of IR or code), or one sentence of everyday analogy when no snippet is short enough, so the reader gets the idea without opening the diff. Do not assume the reader knows the ops, passes, or terms involved. Skip the example only for renames, documentation, formatting, and other purely mechanical changes. The example explains the change and does not replace the findings.
 - Order by importance: direction, correctness, reuse, tests, then style. Do not let nits bury a blocker.
 - Cap nits. When there are many of the same kind, give one example and say the rest are similar. Do not argue taste as if it were a rule.
+- Do not report trivia: a missing final period, capitalization, or wording in a PR description or commit body, unless it breaks a documented format. A nit has to be something a maintainer would actually ask to change. When in doubt, leave it out.
 - Check that the PR description and commit message match what the diff does, and flag changes the description does not mention.
 - Say what is good when it is specific and useful, once, near the top.
 - Prefer a suggestion the author can apply over a description of a problem. In PR review mode, use GitHub suggestion blocks for small fixes.
@@ -172,7 +207,7 @@ If the helper lacked something the review needed, add a short "Helper gaps" list
 
 ## Running commands
 
-Read-only commands need no confirmation: `git log`, `git diff`, `git blame`, `rg`, `grep`, `gh pr view`, `gh pr diff`. Anything else needs the user's OK first, and the proposal says exactly what will run and why. That covers checking out a PR, building, running tests, and running tools such as `mlir-opt` on a counterexample. Propose the smallest command that settles the doubt, for example one lit test instead of `check-all`.
+Read-only commands need no confirmation: `git log`, `git diff`, `git blame`, `rg`, `grep`, `gh pr view`, `gh pr diff`. Anything else needs the user's OK first, and the proposal says exactly what will run and why. That covers checking out a PR, building, running tests, and running tools such as `mlir-opt` on a counterexample. Propose the smallest command that settles the doubt, for example one lit test instead of `check-all`. Do not modify the user's working tree beyond what they approved, and do not push. Report the result in the finding's confidence: a command that reproduced the problem makes it `verified`.
 
 Run build, test, and tool commands through `llvm-mlir-helper` (on `PATH`, at `~/.bin/llvm-mlir-helper`), never through bare `ninja`, `llvm-lit`, `mlir-opt`, `opt`, `clang`, or `llc`. `PATH` also holds a different system LLVM, so a bare tool can give a wrong answer. Learn the helper from its own help: `llvm-mlir-helper help` and `llvm-mlir-helper <group> help` are read-only and need no confirmation. Do not rely on a remembered command list, since the helper changes.
 
@@ -181,7 +216,7 @@ Keep these in mind when using it:
 - Some commands write files next to their input or rewrite the input in place. Read the help for each command's output and side effects before running it. Work on copies in the scratchpad directory and send output to stdout when the helper allows it, so nothing lands in the llvm-project tree.
 - Never run commands that wipe or rebuild the build directory unless the user asks for exactly that.
 
-**Missing subcommands.** If the review needs something the helper cannot do, or does only awkwardly, say so instead of working around it with bare tools or ad hoc scripts. State what you wanted to run, why, which existing command comes closest, and what a new subcommand could look like. Then let the user decide whether to add it. Collect these under "Helper gaps" at the end of the report. Do not modify the user's working tree beyond what they approved, and do not push. Report the result in the finding's confidence: a command that reproduced the problem makes it `verified`.
+**Missing subcommands.** If the review needs something the helper cannot do, or does only awkwardly, say so instead of working around it with bare tools or ad hoc scripts. State what you wanted to run, why, which existing command comes closest, and what a new subcommand could look like. Then let the user decide whether to add it. Collect these under "Helper gaps" at the end of the report.
 
 ## Boundaries
 
