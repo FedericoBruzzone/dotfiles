@@ -132,15 +132,6 @@
     "vscoq.diagnostics.full": true,
     "vscoq.goals.messages.full": true,
 
-    // =============== Typst ===============
-    "[typst]": {
-        "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?"
-    },
-    "[typst-code]": {
-        "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?"
-    },
-
-
     // Dark Gruvbox color theme
     // "workbench.colorCustomizations": {
     //     "terminal.foreground": "#ebdbb2",

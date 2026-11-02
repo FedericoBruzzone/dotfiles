@@ -2,7 +2,7 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
-  "model": "opus",
+  "model": "sonnet",
   "enabledPlugins": {
     "academic-research-skills@academic-research-skills": true,
     "humanizer-blader@anthropic-plugin-directory": true

@@ -104,7 +104,12 @@ require_arg() {
 }
 
 require_docker() {
-    docker info >/dev/null 2>&1 || die "Docker is not running."
+    docker info >/dev/null 2>&1 || {
+        if command -v colima >/dev/null 2>&1; then
+            die "Docker is not running. Start it with 'colima start'."
+        fi
+        die "Docker is not running."
+    }
     docker image inspect "${DOCKER_IMAGE}" >/dev/null 2>&1 ||
         die "Image '${DOCKER_IMAGE}' not found. Run 'smr-helper image-build' first."
 }
