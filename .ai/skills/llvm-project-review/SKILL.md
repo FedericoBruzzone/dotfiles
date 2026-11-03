@@ -97,7 +97,7 @@ Clang and MLIR build on the LLVM rules. When a reference does not mention a topi
 
 ## Direction and design
 
-Do this only for significant changes. A change is significant when it adds or removes a feature, op, dialect, pass, target, option, or dependency, changes public API, IR semantics, bitcode, or default behavior, moves code across layers, or is large. Skip it for bug fixes, NFC cleanups, test-only changes, and small local edits, and do not invent design concerns for them.
+Do this only for significant changes. A change is significant when it adds or removes a feature, op, dialect, pass, target, option, or dependency, changes public API, IR semantics, bitcode, or default behavior, moves code across layers, or is large. Skip the questions below for bug fixes, NFC cleanups, test-only changes, and small local edits, and do not invent design concerns for them. The "Better direction" check still applies to all of them.
 
 Before reviewing details, ask:
 - **Right direction:** What problem does this solve, and is it the problem the project wants solved? Is this the right layer and the right mechanism? Does the PR description say why, and was the approach discussed (an RFC or Discourse thread, an issue, an agreement with the maintainers) when the change is major?
@@ -106,6 +106,13 @@ Before reviewing details, ask:
 - **Stability:** Does it change user-visible behavior, public API, IR or bitcode, and is that intentional, documented, and announced as a potentially breaking change?
 - **Maintenance:** Who maintains it? What does it cost in compile time, code size, build time, and test time? Is it tested enough that someone else can change it safely?
 - **Scope and increments:** Is this one step of a stated plan, or an isolated piece of a bigger change nobody has agreed to? Should it be split or staged?
+
+**Better direction.** After the questions, answer this one explicitly, with its own heading "Better direction" in the report:
+- If a better direction exists, say so plainly. Name the alternative concretely (what to do, where, with which existing mechanism), say why it is better, what it costs, and whether it belongs in this PR or in a follow-up. Examples: a real fix instead of a bail-out, a more general mechanism, a different layer, a smaller or staged change, an approach another part of the tree already uses.
+- A stopgap or workaround is the typical case. When a change avoids a problem instead of solving it (a bail-out, a special case, a flag, a `TODO`), say what the real fix would look like, whether it is feasible now, and whether the stopgap is acceptable meanwhile.
+- If you looked and found nothing better, say that in one line and give the reason, for example "No better direction found: the alternatives (A, B) are worse because ...". Do not leave the question unanswered.
+- Give your recommendation, then the alternatives. Do not list options without choosing. Label it `likely` or `suspected` when you are not sure it works, and say how to check.
+- This applies to every change, including small bug fixes and test-only changes, because a stopgap hides in small changes. For trivial or mechanical changes a single line is enough.
 
 Rules for this part:
 - Say it early. Design findings go first in the report, before details, because later fixes may become moot.
@@ -162,11 +169,11 @@ Keep each finding short, with the problem, the reason, and the fix on separate l
 Confidence is one of:
 - `verified`: reproduced by running something, or shown by a concrete counterexample or by code you read in the repository. Say which.
 - `likely`: follows from reading the code, but not run or proven.
-- `suspected`: a concern to check. Phrase it as a question. Report it only if you can say how to settle it: a concrete input, a test to add, or a command to run (through the helper), written on a `Check:` line in place of `Fix:`. If you cannot say how to check it, drop it. A vague worry with no way to verify, or a `Fix: no change needed if intended`, is noise.
+- `suspected`: a concern to check. Phrase it as a question. Report it only if you can say how to settle it: a concrete input, a test to add, or a command to run (through the helper), written on a `Check:` line in place of `Fix:`. A `Check:` is an action whose result decides the question. "Rename it or leave it" and "ask the author if intended" are not checks. If you cannot say how to check it, drop it. A vague worry, a naming or taste preference, or a `Fix: no change needed if intended` is noise.
 
 Never present a `suspected` or `likely` finding as fact, and never present something as upstream policy unless a reference file says so.
 
-Every `file:Lnn` must point to a line in the diff, or name a changed line as the anchor (see Scope of comments). Direction and design findings come first and have no line number. Write them as a short paragraph under the heading "Direction and design".
+Every `file:Lnn` must point to a line in the diff, or name a changed line as the anchor (see Scope of comments). Direction and design findings come first and have no line number. Write them as a short paragraph under the heading "Direction and design", followed by a "Better direction" line or paragraph that states the alternative, or says none was found and why.
 
 Findings about the PR description, title, commit message, release notes, or other process points are not about a line of code, so they carry no `file:Lnn`. List them under the heading "PR description and process", after the code findings. A finding about a file in the repository (a build file, a test, a doc, a sibling target) is a code finding with `file:Lnn`, even when it is minor. Do not put it in the process section. If a point is about both (for example a rename that needs a note in the description), put it there and mention the code it concerns in the text.
 
@@ -207,7 +214,7 @@ If the helper lacked something the review needed, add a short "Helper gaps" list
 
 ## Running commands
 
-Read-only commands need no confirmation: `git log`, `git diff`, `git blame`, `rg`, `grep`, `gh pr view`, `gh pr diff`. Anything else needs the user's OK first, and the proposal says exactly what will run and why. That covers checking out a PR, building, running tests, and running tools such as `mlir-opt` on a counterexample. Propose the smallest command that settles the doubt, for example one lit test instead of `check-all`. Do not modify the user's working tree beyond what they approved, and do not push. Report the result in the finding's confidence: a command that reproduced the problem makes it `verified`.
+Read-only commands need no confirmation: `git log`, `git diff`, `git blame`, `rg`, `grep`, `gh pr view`, `gh pr diff`. Anything else needs the user's OK first, and the proposal says exactly what will run and why. That covers checking out a PR, building, running tests, and running tools such as `mlir-opt` on a counterexample. It also covers anything that writes to the repository, including `git fetch`, `git checkout`, `git switch`, `git worktree add`, `git stash`, and `gh pr checkout`. A fetch only adds refs, but it still changes the user's repository, so ask. The diff of a PR is available through `gh pr diff`, so a PR review does not need a fetch to start. Propose the smallest command that settles the doubt, for example one lit test instead of `check-all`. Do not modify the user's working tree beyond what they approved, and do not push. Report the result in the finding's confidence: a command that reproduced the problem makes it `verified`.
 
 Run build, test, and tool commands through `llvm-mlir-helper` (on `PATH`, at `~/.bin/llvm-mlir-helper`), never through bare `ninja`, `llvm-lit`, `mlir-opt`, `opt`, `clang`, or `llc`. `PATH` also holds a different system LLVM, so a bare tool can give a wrong answer. Learn the helper from its own help: `llvm-mlir-helper help` and `llvm-mlir-helper <group> help` are read-only and need no confirmation. Do not rely on a remembered command list, since the helper changes.
 
