@@ -65,6 +65,8 @@ tags
 .claude/jobs/
 .claude/daemon.lock
 .claude/daemon.status.json
+.claude/daemon-auth-cooldown
+.claude/daemon-auth-status.json
 
 # OpenCode metadata (.config/opencode)
 .config/opencode/node_modules/

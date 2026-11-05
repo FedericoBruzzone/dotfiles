@@ -37,10 +37,9 @@ Facts to cite in the "Direction and design" part of a review.
 ## Reverts
 - The project prefers "revert to green" over fixing forward. A revert needs a reproducible failure and the commit message says why.
 
-## AI-assisted contributions
-- The author reads and understands everything submitted and can answer questions about it. The PR description is written by the author.
-- Substantial tool-generated content is labeled, for example with an `Assisted-by:` trailer in the commit message or PR description.
-- Autonomous agents acting in project spaces are not allowed, and review tools must not post without human verification.
+## AI tools
+- Never comment on, ask about, or flag whether the author used AI tools, and never mention `Assisted-by:` or `Co-authored-by:` trailers that relate to AI. This is not part of this review. If the user wants it, they will raise it.
+- For the reviewer side: review tools must not post comments without human verification, which is why this skill only drafts comments.
 
 ## Sources
 - Developer policy: https://llvm.org/docs/DeveloperPolicy.html
