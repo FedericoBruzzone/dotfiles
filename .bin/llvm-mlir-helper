@@ -54,6 +54,10 @@ usage_test() {
     cat <<EOF
 test                                      Run and update tests.
   test lit <path...>                      Run lit on a folder or file.
+  test run <file> [--emit E] [--debug|--only TYPE]
+                                          Run the first RUN line up to '| FileCheck' and show its output.
+                                          --emit: stdout (default), file (<file>.out.mlir), none.
+                                          --debug adds --debug, --only TYPE adds --debug-only=TYPE.
   test update <file>                      Regenerate the CHECK lines of a .mlir or .ll test.
                                           .mlir: runs the first RUN line up to '| FileCheck' and feeds
                                           its output to mlir/utils/generate-test-checks.py.
@@ -162,7 +166,7 @@ sysroot() {
     if [[ "$OSTYPE" == darwin* ]]; then echo "-isysroot $(xcrun --show-sdk-path)"; fi
 }
 
-F_O= F_o= F_cpu= F_emit= F_llc_flags= F_lower= F_no_lower= F_only= F_pipeline= F_schedule= F_to= F_type=
+F_O= F_o= F_cpu= F_debug= F_emit= F_llc_flags= F_lower= F_no_lower= F_only= F_pipeline= F_schedule= F_to= F_type=
 # Splits "$@" into POS (positional arguments) and F_<flag> variables.
 # $1 lists the accepted flags: "name" takes a value, "name!" is a switch, "O" is -O<level>.
 parse_args() {
@@ -294,6 +298,22 @@ mlir_run_command() {
     echo "${cmd//%s/$(printf %q "$1")}"
 }
 
+test_run() {
+    parse_args "emit only debug!" "$@"
+    need 1 1 "test run <file.mlir> [--emit E] [--debug|--only TYPE]"
+    local input=${POS[0]} emit=${F_emit:-stdout} cmd
+    cmd=$(mlir_run_command "$input")
+    if [ -n "$F_only" ]; then cmd+=" --debug-only=${F_only}"; elif [ -n "$F_debug" ]; then cmd+=" --debug"; fi
+    note "$cmd"
+    case $emit in
+        stdout) PATH="${BIN}:${PATH}" eval "$cmd" ;;
+        file)   PATH="${BIN}:${PATH}" eval "$cmd" > "${input%.*}.out.mlir"
+                note "written to ${input%.*}.out.mlir" ;;
+        none)   PATH="${BIN}:${PATH}" eval "$cmd" > /dev/null ;;
+        *) die "unknown --emit '$emit' (expected stdout, file or none)" ;;
+    esac
+}
+
 test_update() {
     parse_args "" "$@"
     need 1 1 "test update <file.mlir|file.ll>"
@@ -301,12 +321,20 @@ test_update() {
     log "Updating FileCheck patterns in ${input}"
     case $input in
         *.mlir)
-            local cmd out
+            local cmd out tmp
             cmd=$(mlir_run_command "$input")
             note "$cmd"
-            # Run first and only then rewrite the file, so a failing RUN line does not wipe its CHECKs.
+            # Run first and generate into a temp file, so a failing RUN line or script does not wipe the test
+            # (the script with -i truncates the source before it can fail).
             out=$(PATH="${BIN}:${PATH}" eval "$cmd")
-            python3 "${REPO_ROOT}/mlir/utils/generate-test-checks.py" --source "$input" -i <<<"$out"
+            tmp=$(mktemp)
+            if python3 "${REPO_ROOT}/mlir/utils/generate-test-checks.py" --source "$input" -o "$tmp" <<<"$out"; then
+                cat "$tmp" > "$input"
+                rm -f "$tmp"
+            else
+                rm -f "$tmp"
+                die "generate-test-checks.py failed, '${input}' left untouched"
+            fi
             ;;
         *.ll)
             python3 "${REPO_ROOT}/llvm/utils/update_test_checks.py" \
@@ -330,6 +358,7 @@ group_test() {
     [ $# -gt 0 ] && shift
     case $cmd in
         lit)    test_lit "$@" ;;
+        run)    test_run "$@" ;;
         update) test_update "$@" ;;
         check)  test_check "$@" ;;
         help)   usage_test; exit 0 ;;
