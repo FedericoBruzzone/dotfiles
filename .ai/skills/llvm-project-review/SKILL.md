@@ -102,11 +102,11 @@ Clang and MLIR build on the LLVM rules. When a reference does not mention a topi
 5. Search the repository for code the change should reuse, and for duplication it introduces (see Reuse and duplication).
 6. For changes that alter behavior, look for real bugs with `references/correctness.md`. This is where most of the review's value is, so do it before the style checklist.
 7. Review the changed lines against each reference's checklist, including its TableGen section when `.td` files changed. The checklists apply to what the diff adds, not to the files as a whole.
-8. Write the report with the template in Report. Keep it to one screen, in plain words, and teach as you go.
+8. Write the report with the template in Report, in that order and nothing else, in plain words.
 
 ## Direction and design
 
-Do this only for significant changes. A change is significant when it adds or removes a feature, op, dialect, pass, target, option, or dependency, changes public API, IR semantics, bitcode, or default behavior, moves code across layers, or is large. Skip the questions below for bug fixes, NFC cleanups, test-only changes, and small local edits, and do not invent design concerns for them. The "Better direction" check still applies to all of them.
+Do this only for significant changes. A change is significant when it adds or removes a feature, op, dialect, pass, target, option, or dependency, changes public API, IR semantics, bitcode, or default behavior, moves code across layers, or is large. Skip the questions below for bug fixes, NFC cleanups, test-only changes, and small local edits, and do not invent design concerns for them. The DIRECTION section of the report is still required for all of them.
 
 Before reviewing details, ask:
 - **Right direction:** What problem does this solve, and is it the problem the project wants solved? Is this the right layer and the right mechanism? Does the PR description say why, and was the approach discussed (an RFC or Discourse thread, an issue, an agreement with the maintainers) when the change is major?
@@ -116,10 +116,10 @@ Before reviewing details, ask:
 - **Maintenance:** Who maintains it? What does it cost in compile time, code size, build time, and test time? Is it tested enough that someone else can change it safely?
 - **Scope and increments:** Is this one step of a stated plan, or an isolated piece of a bigger change nobody has agreed to? Should it be split or staged?
 
-**Better direction.** After the questions, answer "Is the direction right?" explicitly in the report, following "The direction part" under Report. It applies to every change, including small bug fixes and test-only changes, because a stopgap hides in small changes.
+**Direction.** After the questions, write the DIRECTION section of the report as described under Report. It applies to every change, including small bug fixes and test-only changes, because a stopgap hides in small changes.
 
 Rules for this part:
-- Say it early. Design findings go first in the report, before details, because later fixes may become moot.
+- Think about the direction first. The DIRECTION section comes before the REVIEW, because later fixes may become moot.
 - Explain the reasoning in a short paragraph and name the alternative you would prefer. A bare "I don't like this" is not useful.
 - Use `question` when the intent or tradeoff is unclear, and `blocker` only when the direction is clearly wrong or risks the project.
 - Do not guess about project history or maintainer opinions. If the direction needs community input, say that and suggest an RFC. Point to `references/process.md` for what the policy says.
@@ -169,126 +169,126 @@ Report these as `should fix` or `question`. Escalate to a design finding when th
 
 ## Report
 
-The report is short by default and teaches as it goes. The reader knows LLVM and MLIR basics (what an op, a pass, or a pattern is) but not the specific area the PR touches, so explain that area's own concepts and nothing more basic. Write like a mentor who respects the reader: say what you see, why it matters, and what rule of thumb to take away. Never talk down.
+The report has a fixed structure, in this order, and nothing else. The reader knows LLVM and MLIR basics (what an op, a pass, or a pattern is) but not the specific area the PR touches, so explain that area's own concepts and nothing more basic. Write like a mentor who respects the reader. Never talk down.
 
-Language: write the report in the language the user has been using in the session, and in English if unclear. The comment to the author is always in English, since it goes on GitHub.
+Language: write the report in the language the user has been using in the session, and in English if unclear. The comments to post are always in English, since they go on GitHub.
 
-Size limits, which matter more than completeness:
-- The whole report fits on about one screen, around 45 lines excluding code blocks and the comment blocks, which are a deliverable and have their own limits.
-- At most 3 changes in "Top changes". Everything else is counted in one line ("4 smaller points: tests, naming. Say 'show all' to see them") and shown only on request.
-- Plain words, short sentences, one idea each. Explain any term in half a sentence the first time. No paths, line numbers, or function names in the prose, only in the "Top changes" anchors.
-- Do not repeat a point in two sections.
-
-If the user asks "show all", "explain N", "why", or "go deeper", then give the full version: the omitted findings, the reasoning behind a point, and the code references.
+Rules for the whole report:
+- Plain words, short sentences, one idea each. Explain any term in half a sentence the first time it appears.
+- Keep it short. No filler headings, no labels such as "Takes:", "Right?", "Problem:", "Fix:", "Lesson:", "State:". No checklist table.
+- Do not repeat a point in two places.
+- Every claim about where something is in the code comes with a link to the exact lines (see Links to code). No link, no claim.
+- If the user asks "show all", "explain N", "why", or "go deeper", give the omitted points, the reasoning, and the code references.
 
 Template, in this order:
 
 ```
-Verdict: <ready | ready after nits | ready after fixes | needs changes>.
-<One sentence: the single most important thing to do next.>
-
-## Background
+## BACKGROUND
 <2 to 4 lines: the concepts of this area the reader needs to follow the review. Plain words and an analogy. Only what this review uses.>
 
-## What this PR does
-<One or two plain sentences, then the example.>
+## BEFORE THIS PR
+Command: <the command that turns the input into the result, for example `mlir-opt --fold-memref-alias-ops input.mlir`>
+<the example input, in a code block>
+Result (wrong), <run | reconstructed from the code, not run>:
+<the IR the transformation produced, in a code block, even when that IR is invalid>
+Error: <the verifier error or message, if any>
 
-## Direction
-Takes: <the approach the PR chose and the idea behind it, one or two sentences>.
-Right? <Yes | Partly | No>. <One sentence: why.>
-<If Partly or No, at most 3 problems:>
-- <problem>. Consequence: <what gets worse, breaks, or gets blocked>.
-Instead (one path, decided):
-1. <do this, in this place> [this PR | follow-up | ask the maintainers first]
-   Done when: <something observable>
-2. ...
-Comment to post: <where it goes, then the question or request for the author in a code block>
-<If Yes:> No better direction found, because <the alternatives are worse, and why>.
+## AFTER THIS PR
+Command: <the same command>
+<the example input, in a code block. The same input when the input is the same>
+Result (correct), <run | reconstructed from the code, not run>:
+<the IR the transformation produces now, in a code block. If the IR is unchanged, still show it and say "unchanged">
 
-## Top changes
-1. [severity] <title in plain words> (file:Lnn)
-   Problem: <at most two sentences>
-   Fix: <what to do>
-   Lesson: <one line: the general rule behind it, useful in the next review>
-   Comment to post: <General PR comment | Inline: file, line n>
-   <the question or request for the author, in a code block>
-2. ...
-Also: <count and topics of the smaller points>.
+## DIRECTION
+<prose, see below>
 
-## Mentor notes
-- <concept>: <two or three lines in plain words>. Learn more: <link to the doc>
-<Two or three notes at most, only for concepts this review used.>
+---
 
-## State
-<Three or four short lines: reviews and approvals, open threads, CI, linked issue, what was checked.>
-Areas to fix: <names of the failing areas, or none>.
+## REVIEW
+Overall: <ready | ready after nits | ready after fixes | needs changes>. <One sentence on what matters most.>
+
+Direction comment (only if a better direction exists), General PR comment: [<question | should fix | blocker>]
+<the comment, in a code block>
+Why post this: <one or two sentences>
+
+General comment (only if needed):
+<the comment, in a code block>
+Why post this: <one or two sentences>
+
+<file>:<line>: [<nit | should fix | question | blocker>]
+<the comment, in a code block>
+Why post this: <one or two sentences>
+
+... (the other line comments)
+
+## MENTOR NOTES
+- <concept>: <two or three lines in plain words>. Learn more: <link>
+
 Commands run: <see below>
 ```
 
-### What this PR does and the example
-Give an intuitive example for any change that alters behavior in code or IR, so the reader gets it without opening the diff. Skip it only for renames, documentation, formatting, and other mechanical changes. Use this shape:
-1. **In plain words:** one sentence, no jargon, saying what the change does and when. Use an everyday analogy if the idea is abstract.
-2. **Before this PR:** a small complete snippet in its own code block.
-3. **After this PR:** the same snippet as it is with the PR applied, in its own code block.
-4. **Why it is safe, or what it fixes:** one line, never a paragraph.
+### BEFORE and AFTER THIS PR
+These two sections make the change obvious without opening the diff. Skip them only for renames, documentation, formatting, and other purely mechanical changes.
+- Each has the command, the example input, and then the full IR the transformation produces. The input is shown in both, so the reader sees the same code before and after. Take it from the PR's own tests and trim it.
+- The result is always the IR after the transformation, never only an error message. When the old code produced invalid IR, show that invalid IR (the extra ops, the broken structure) and put the verifier error on its own line under it, so the reader sees what went wrong. When the new code leaves the IR unchanged, show it anyway and say "unchanged".
+- Say whether each result was run or reconstructed from the code. Running needs permission (Hard rule 1), so by default write "reconstructed from the code, not run" and never present a reconstruction as real output.
+- BEFORE shows the wrong output, or the error, that the code gave without the PR. AFTER shows the correct output with the PR applied.
+- The sections are always called exactly "BEFORE THIS PR" and "AFTER THIS PR". They compare the code without the PR to the code with the PR, never one option against another.
+- Show full lines. Never use "..." or "{...}" or cut a line short. Keep each block under about ten lines. Mark the line that changes with a short comment on that line only. Real code a reader could paste into a test.
+- If the PR adds an option or feature and changes nothing by default, BEFORE shows what the user could not do (for example `// not possible: the option cannot be set from a script`, with the result "not possible") and AFTER shows the line they can now write and its result. If the effect is not obvious, add a second small pair for the effect, clearly labeled, with the same input in both.
+- Explain every op, type, or term that is not common knowledge in half a sentence the first time it appears.
+- If no snippet can show it (performance, a build change), use one plain sentence and an analogy in each section and skip the code.
 
-Rules for the snippets:
-- Two separate code blocks, never one block with "becomes" comments in the middle.
-- The labels are exactly "Before this PR" and "After this PR". The pair always compares the code without the PR to the code with the PR. Labels such as "Input", "Default result", or "With the option on" are not a before and after, so do not use them for the pair.
-- Same names and values in both, so only the real difference shows. Mark the changed lines with a short comment on those lines only. Never use "..." or "{...}" or cut a line short inside a block. Show full lines, and keep the two blocks the same shape so the reader can compare them line by line.
-- If the PR does not change what happens by default, say that in the one-line "why". Then make the pair about what the PR newly allows. Before this PR, show what the user had to write or could not do (a comment such as `// not possible: the option cannot be set from a script`). After this PR, show the line they can now write. If the effect of the new capability is not obvious, add a second small pair that is clearly labeled for what it compares, for example "Option off" and "Option on", with the same input in both.
-- Valid, self-contained code a reader could paste into a test. Take it from the PR's own tests and trim it. Keep each block under about ten lines.
-- If no snippet can show it (performance, a build change), use the sentence and an analogy and skip the snippets.
-- For a bug fix use three blocks: "Input", "Before this PR (wrong)", and "After this PR (right)". Never put the old wrong result under the label "After".
+### BACKGROUND
+What the reader needs to follow this review: the two to four concepts of the area that the PR assumes. Use a tiny concrete example. For a divisibility analysis, for instance: what "divisible by 3" means for a loop counter, and why a negative number read as unsigned looks huge.
 
-### Background and mentor notes
-This is the teaching part. Keep it small and useful.
-- Background is what the reader needs to follow this review: the two to four concepts of the area that the PR assumes. For example, for a divisibility analysis: what "divisible by 3" means for a loop counter, why a negative number looks huge when read as unsigned, and why that matters. Use a tiny concrete number example.
-- Mentor notes come at the end and name the general ideas behind the review that the reader can reuse: why generic analyses should not match op names, why a bail-out loses facts, why tests should check a pass in isolation. Each note is two or three lines and ends with a link taken from the reference files (or from a page you actually read). Do not invent links.
-- A "Lesson" line under each top change states the rule of thumb behind it in one sentence, so the reader learns what to look for next time.
-- Do not pad. If the review used no concept worth a note, write fewer notes.
+### DIRECTION
+Write prose, with no labels, in this order:
+1. The direction the PR takes: the strategy it chose and the idea behind it, not a list of edits. For example: "it makes the analysis safe by special-casing the index type, giving up on any dynamic bound, and recognizing loops by operation name". Say what the author seems to be trying to achieve and what path they picked.
+2. If the direction is right, say so and why, in a sentence or two, and that you looked for alternatives and why they are worse. Stop there.
+3. If the direction is not right or only partly right, explain what is wrong with it and why. Each problem comes with its consequence: what gets less precise, slower, or less safe, what breaks for other users, or what future work it blocks. A point without a consequence is a preference, so drop it. Keep to two or three problems that matter. Code details belong in the review comments.
+4. Then the better direction, as its own paragraph that opens with the sentence "A better direction exists:" or "I found no better direction:". Never bury it in another paragraph or in a clause. If one exists, give one to three alternatives, each with why it would be better and what it costs, and name where each belongs (this PR, a follow-up, or something to ask the maintainers about first). Say which one you recommend and why, and decide: do not leave the choice open. If you truly cannot pick, say what single fact would decide it and how to find out. Show what the better direction would produce, in a short code block (the IR or code after it, under about ten lines), so the reader sees it and not only reads about it. Link the precedent in the code (see Links to code).
+5. Say how sure you are (`likely` or `suspected`) and, if not sure, how to check.
+6. If the direction needs the maintainers' agreement, say so. Do not guess what maintainers think.
 
-### The direction part
-This is the most important part, so make it easy to act on.
-- First say which direction the PR takes: the strategy it chose, not a list of edits. "What this PR does" describes the change. This describes the approach and the idea behind it. For example: "it makes the analysis safe by special-casing the index type, giving up on any dynamic bound, and recognizing loops by operation name".
-- Then the answer, Yes, Partly, or No, with the reason in one sentence.
-- If it is Partly or No, list at most 3 problems with the direction itself. Each has a problem and its consequence: what gets less precise, slower, or less safe, what breaks for other users, or what future work it blocks. A point without a consequence is a preference, so drop it. Code details belong in the changes, not here.
-- Then the proposal, which must be clear enough to act on today. Give ONE recommended path as numbered steps. Decide. Do not write "either A or B": pick one and say why. If you truly cannot pick, say what single fact would decide it and how to find out.
-- Each step says what to do and where, in plain words, with at most one existing mechanism named and explained in half a sentence. Mark it "this PR", "follow-up", or "ask the maintainers first". Give each step a "Done when" line that someone could check, such as a test that now passes, a behavior that is preserved, or code that is gone. Order the steps so the first can be done and reviewed alone.
-- The direction part ends with its own "Comment to post", written to the rules in "Comments to post" below. Do not repeat it elsewhere.
-- Say how sure you are (`likely` or `suspected`) and, if not sure, how to check.
-- For small bug fixes one line is enough, but the answer is still required: a stopgap hides in small changes. If the fix avoids a problem instead of solving it (a bail-out, a special case, a flag, a `TODO`), say what the real fix would look like and whether the stopgap is acceptable meanwhile.
+A small bug fix still gets this part, in one or two lines: a stopgap hides in small changes. If the fix avoids a problem instead of solving it (a bail-out, a special case, a flag, a `TODO`), say what the real fix would look like and whether the stopgap is acceptable meanwhile.
 
-### Comments to post
-The user wants the exact comments to send, so write them, and put each one right under the point it belongs to. They are drafts: the user reads, edits, and posts them. Never post them yourself (Hard rule 2).
-- In PR review mode, the direction part (if it is Partly or No) and every item in "Top changes" has its own "Comment to post". A description or process point that decides the verdict is a Top change and also has one. In self-review mode there are no comments: write "What to change next" in the Direction part instead and leave out "Comment to post" lines.
-- Before each comment, one line says where it goes: `General PR comment`, or `Inline: <file>, line <n>` on a line of the diff. If the point is about a file the diff does not touch, post it as a general comment and name the file in the text.
-- The text of each comment goes in its own code block, so it can be copied as is. Write in English, in the user's voice, in first person. No sign-off, no mention of tools or AI, no `@` mentions, no emoji.
-- Prefer questions. Lead with what you see, then ask. Use forms like "Could we ...?", "Would it make sense to ...?", "Is there a reason ...?", "Should this also ...?". Make the question easy to answer yes or no, and give the reason in one sentence so the author understands why you ask. Use a direct request only for a `blocker`, and keep it polite.
-- Be kind and specific, never vague. Ask for one thing per comment. Name the concrete change and, when it helps, give a number or a two-line example.
-- One to four sentences each. For a small fix, include a GitHub suggestion block with the exact replacement.
+### REVIEW
+This is based on everything above: the general comment comes from the direction, and the line comments come from the issues found in the diff.
+- "Overall" is the verdict, chosen from the highest severity among all findings:
+  - `ready`: no findings, or only `question`.
+  - `ready after nits`: only `nit`.
+  - `ready after fixes`: at least one `should fix` and no `blocker`.
+  - `needs changes`: at least one `blocker`, or an unresolved request for changes from another reviewer.
+  An approval by someone else does not lower the verdict. Say it next to the verdict. If the discussion or CI changes what matters (an open request from another reviewer, a failing check, a question already asked), say it in that one sentence.
+- If a better direction exists, it gets its own comment, first in the REVIEW, with its own "Why post this". Never fold it into a general comment or into a clause of another comment. State the better direction plainly in that comment, with the link to the precedent, and ask the author about it as a question when the maintainers' view is unknown. Tag it `[question]`, or `[should fix]` if the current direction is clearly wrong, or `[blocker]` only if it risks the project.
+- The general comment is for the description, process points, and any point about a file the diff does not touch. Omit it if there is nothing to say. Do not write one just to say thanks.
+- Each line comment is one finding on one added or changed line. Write its location and severity as `<file>:<line>: [<severity>]`, then the comment in a code block. The comment is what the user pastes, so the location and tag are not part of it.
+- At most 5 line comments. Count the rest in one line ("3 smaller points: naming, a comment. Say 'show all'"). Order by importance: correctness, then reuse, tests, style.
+- After every comment, "Why post this:" gives the reason it is worth posting, in one or two sentences, for the user. It says what goes wrong if it is not raised, or what rule of thumb it teaches. It is not part of the comment.
+- In self-review mode there are no comments to post. Write "What to change next" as a list in the same line format, with a one-line reason each.
+
+### Links to code
+Whenever the report or a comment says something is somewhere in the code, give a link to the exact lines. This covers precedent ("other patterns do X"), existing helpers, the old behavior, what a verifier or pattern checks, and any line of the PR you point at. A claim about code without a link is not allowed.
+- **Code in the repository, not in the diff:** a permalink of the form `https://github.com/llvm/llvm-project/blob/<sha>/<path>#L<start>-L<end>`. Use the full 40-character commit SHA of the code you actually read, never `main` or a branch name, because lines move. Take it from the checkout you read with `git -C <repo> rev-parse HEAD` and confirm GitHub has it with `gh api repos/llvm/llvm-project/commits/<sha> --jq .sha`. If the content came from the PR or from `gh`, use the SHA it came from (`gh pr view <n> --json baseRefOid,headRefOid`).
+- **Lines that the PR adds or changes:** link into the PR's diff, `https://github.com/llvm/llvm-project/pull/<n>/files#diff-<hash>R<line>`, where `<hash>` is the SHA-256 of the file path (`printf '%s' '<path>' | shasum -a 256`) and `R` means the new side (`L` the old side). A blob permalink at the PR's head SHA is also fine.
+- **Check before linking:** confirm that the lines say what you claim, with `git show <sha>:<path> | sed -n '<start>,<end>p'` or `gh api`. Use the smallest range that shows the point, ideally under 15 lines.
+- **In a comment to post:** put the permalink alone on its own line. GitHub then shows the snippet inline for the author.
+- **Docs:** link only pages you read, or links taken from the reference files.
+- **No verified link:** if you only remember the code or guessed, do not state it as a fact. Mark the point `suspected` and say how to check it, or drop it.
+
+### Writing the comments
+The user wants the exact comments to send. They are drafts: the user reads, edits, and posts them. Never post them yourself (Hard rule 2).
+- English, in the user's voice, first person. No sign-off, no mention of tools or AI, no `@` mentions, no emoji.
+- Prefer questions. Lead with what you see, then ask. Use forms like "Could we ...?", "Would it make sense to ...?", "Is there a reason ...?", "Should this also ...?". Make it easy to answer yes or no, and give the reason in one sentence. Use a direct request only for a `blocker`, and keep it polite.
+- One to four sentences. Ask for one thing. Name the concrete change, with a number or a two-line example when it helps. For a small fix, include a GitHub suggestion block with the exact replacement.
+- `file:line` must be a line of the diff. If the point is about a file the diff does not touch, make it a general comment and name the file in the text.
+- When a comment points at other code ("other patterns do this", "this helper already exists"), include the permalink on its own line, as described in Links to code.
 - Do not speak for the maintainers, and do not claim policy unless a reference file says so. If the point needs their agreement, ask them as a question and say what you recommend.
-- For `suspected` points, the comment is a real question, and says how the author could check it.
-- Do not write comments for points you dropped or for the "Also" list. Offer them under "show all".
+- Confidence: `verified` (reproduced, shown by a counterexample, or by code you read), `likely` (follows from reading, not run), or `suspected` (a concern to check). A `suspected` comment is a real question, and says how the author could check it. Drop a `suspected` point if you cannot say how to check it, and drop taste and naming preferences. Never present a `suspected` or `likely` finding as fact, and never present something as upstream policy unless a reference file says so.
 
-### Changes
-Order by importance: correctness, then reuse, tests, style. Do not let nits bury a blocker. `file:Lnn` must point to a line in the diff, or name a changed line as the anchor (see Scope of comments). A finding about a file in the repository (a build file, a test, a doc, a sibling target) is a code finding with `file:Lnn`, even when it is minor. Points about the description, title, commit message, or release notes have no line number and go in one line under "Also" or, if they decide the verdict, in "Top changes".
-
-Severity is one of `blocker`, `should fix`, `nit`, or `question` (see Severity). Confidence is one of:
-- `verified`: reproduced by running something, or shown by a concrete counterexample or by code you read in the repository. Say which.
-- `likely`: follows from reading the code, but not run or proven.
-- `suspected`: a concern to check. Phrase it as a question. Report it only if you can say how to settle it: a concrete input, a test to add, or a command to run (through the helper), written on a `Check:` line in place of `Fix:`. A `Check:` is an action whose result decides the question. "Rename it or leave it" and "ask the author if intended" are not checks. A vague worry or a taste preference is noise, so drop it.
-
-Never present a `suspected` or `likely` finding as fact, and never present something as upstream policy unless a reference file says so.
-
-### Verdict
-Choose from the highest severity among all findings, including the ones you only counted:
-- `ready`: no findings, or only `question`.
-- `ready after nits`: only `nit`.
-- `ready after fixes`: at least one `should fix` and no `blocker`.
-- `needs changes`: at least one `blocker`, or an unresolved request for changes from another reviewer.
-
-An approval by someone else does not lower the verdict. Say it next to the verdict instead.
+### MENTOR NOTES
+Two or three notes at most, only for ideas this review used, that the reader can reuse in the next review: why generic code should not match op names, why a bail-out loses facts, why a test should check one thing. Each is two or three lines in plain words and ends with a link taken from the reference files or from a page you actually read. Do not invent links. If the review used no idea worth a note, write fewer.
 
 ### Commands run and helper gaps
 Always finish with a "Commands run" line, so a violation of Hard rule 1 is visible at a glance:
@@ -302,8 +302,7 @@ If the helper lacked something the review needed, add a short "Helper gaps" list
 ### Style of the review
 - Check that the PR description and commit message match what the diff does, and flag changes the description does not mention.
 - Cap nits. Do not argue taste as if it were a rule. Do not report trivia such as a missing final period in a PR body unless it breaks a documented format. When in doubt, leave it out.
-- Never raise, ask about, or comment on whether the author used AI tools or on AI-related trailers (`Assisted-by:`, `Co-Authored-By:`), not even as a question and not in a "Comment to post". It is out of scope for this skill.
-- Say what is good when it is specific and useful, once.
+- Never raise, ask about, or comment on whether the author used AI tools or on AI-related trailers (`Assisted-by:`, `Co-Authored-By:`), not even as a question and not in a comment. It is out of scope for this skill.
 - Prefer a suggestion the author can apply over a description of a problem. In PR review mode, use GitHub suggestion blocks for small fixes.
 - Stay within your evidence. If an area is outside what you can judge, say so and name who could.
 
