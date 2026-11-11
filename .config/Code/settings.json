@@ -176,4 +176,5 @@
     "diffEditor.ignoreTrimWhitespace": true,
     "diffEditor.renderSideBySide": true,
     "diffEditor.useInlineViewWhenSpaceIsLimited": true,
+    "workbench.colorTheme": "GitHub Dark Default",
 }
